@@ -10,6 +10,7 @@
 # - Function create_refresh_token(user_id, family_id, expires_delta) -> tuple[str, str]
 # - Function decode_token(token) -> dict | None
 # - Function verify_token(token, token_type) -> dict | None
+from app.schemas.auth import TokenPayload
 import uuid
 from passlib.context import CryptContext 
 from jose import jwt
@@ -17,7 +18,7 @@ from datetime import datetime, timedelta, timezone
 from app.config.settings import get_settings
 from typing import Optional, Any
 
-pwd_context = CryptContext(schemes=["bcrypt"], delattr="auto")
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def hash_password(password:str) -> str: 
     return pwd_context.hash(password)
@@ -40,7 +41,7 @@ def create_token (
     Returns:
         tuple: (token, jti, expires_at)
     """
-    jti = str(uuid.uuid4)
+    jti = uuid.uuid4()
     now = datetime.now(timezone.utc)
 
     if expires_delta:
@@ -50,20 +51,18 @@ def create_token (
     else:
         expires_at = now + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
 
-    payload = {
-        "sub": subject, 
-        "type": token_type, 
-        "jti": jti, 
-        "iat": now, 
-        "exp": expires_at
-    }
+    payload = TokenPayload(
+        sub=uuid.UUID(subject),
+        jti=jti,
+        type=token_type,
+        family_id=extra_claims.get("family_id") if extra_claims else None,
+        iat=now,
+        exp=expires_at
+    )
 
-    if extra_claims: 
-        payload.update(extra_claims)
-    
-    token = jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
+    token = jwt.encode(payload.model_dump(mode="json"), settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
 
-    return token, jti, expires_at
+    return token, str(jti), expires_at
 
 def create_access_token(
     subject:str, 
@@ -71,7 +70,7 @@ def create_access_token(
 ) -> tuple[str, str, datetime]:
     return create_token(subject, "access", extra_claims=extra_claims)
 
-def create_access_token(
+def create_refresh_token(
     subject:str, 
     extra_claims: Optional[dict[str, Any]] = None
 ) -> tuple[str, str, datetime]:
@@ -79,11 +78,12 @@ def create_access_token(
 
 def decode_token(
     token: str
-) -> dict[str, Any]: 
-    return jwt.decode(token, settings.JWT_SECRET, settings.JWT_ALGORITHM)
+) -> TokenPayload: 
+    data = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
+    return TokenPayload(**data)
 
 def generate_verification_token() -> tuple[str, str]: 
-    plain_token = str(uuid.uuid4)
+    plain_token = str(uuid.uuid4())
     hashed_token = hash_password(plain_token)
     return plain_token, hashed_token
 

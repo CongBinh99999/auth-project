@@ -38,3 +38,45 @@ async def init_db():
         await conn.run_sync(SQLModel.metadata.create_all)
 
 
+"""
+DATABASE LAYER – IMPORTANT NOTES
+
+1. engine
+- Là nơi biết đường kết nối tới database và quản lý connection pool
+- Đóng vai trò trung gian để SQL được gửi tới database
+- Không phải nơi viết logic query, nhưng SQL muốn chạy bắt buộc phải thông qua engine
+- Session sẽ mượn connection từ engine để làm việc
+
+2. AsyncSessionLocal
+- Là nơi tạo ra các session khác nhau (session factory)
+- Mỗi lần gọi AsyncSessionLocal() → tạo 1 AsyncSession mới
+- Mỗi session đại diện cho một lần làm việc với database (thường là 1 request)
+- Không dùng chung session cho nhiều request
+
+3. AsyncSession
+- Là phiên làm việc trực tiếp với database
+- Là nơi thực sự thực hiện các câu lệnh SQL (thông qua engine)
+- Quản lý transaction, trạng thái query, và dữ liệu đang được load
+- Gắn với vòng đời của một request
+
+4. get_db()
+- Là dependency dùng trong FastAPI
+- Giống như một công xưởng bao quát toàn bộ database layer
+- Chịu trách nhiệm:
+    + tạo session từ AsyncSessionLocal
+    + cung cấp session cho route / service sử dụng
+    + commit nếu thành công
+    + rollback nếu có lỗi
+    + close session sau khi xong việc
+- Route / service chỉ dùng session, không tự commit
+
+Flow chuẩn:
+Request
+ → get_db()
+ → AsyncSession
+ → engine (mượn connection)
+ → Database
+
+"""
+
+

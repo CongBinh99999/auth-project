@@ -5,15 +5,12 @@ from sqlmodel.main import SQLModel, Field,  Relationship
 from typing import Optional, TYPE_CHECKING, List
 from enum import Enum
 from datetime import datetime, timezone
-
+from app.utils.constants import DeviceStatus
 if TYPE_CHECKING:
     from app.models.user import User
     from app.models.token_family import TokenFamily
 
-class StatusType(str, Enum): 
-    ACTIVE = "active"
-    INACTIVE = "inactive"
-    BLOCKED = "blocked"
+
 
 class UserDevice(SQLModel, table=True):
     __tablename__="user_devices"
@@ -26,7 +23,7 @@ class UserDevice(SQLModel, table=True):
     ip_address: Optional[str] = Field(default=None, max_length=45)
     user_agent: Optional[str] = Field(default=None)
     fingerprint: Optional[str] = Field(default=None, max_length=255)
-    status: StatusType = Field(default="active", max_length=20)
+    status: DeviceStatus = Field(default="active", max_length=20)
     is_trusted: bool = Field(default=False)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
