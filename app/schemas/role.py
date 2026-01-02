@@ -1,58 +1,79 @@
-from pydantic import BaseModel, ConfigDict, Field, ConfigDict
-from typing import Optional 
+"""
+Module chứa các schemas cho Role và Permission entities.
+
+Bao gồm:
+- RoleBase, RoleCreate, RoleUpdate, RoleResponse: Schemas cho Role
+- RoleWithPermissions: Role kèm danh sách permissions
+- PermissionBase, PermissionCreate, PermissionResponse: Schemas cho Permission
+"""
+from pydantic import BaseModel, ConfigDict, Field
+from typing import Optional, List
+from uuid import UUID
+from datetime import datetime
 
 
 class RoleBase(BaseModel): 
+    """Base schema cho Role - chứa các field chung."""
     model_config = ConfigDict(from_attributes=True)
 
-    name: str = Field(..., min_length=8, max_length=255, description="Name role")
-    code: str = Field(..., min_length=1, max_length=50, pattern=r"^[A-Z][A-Z0-9_]*$" description="Unique code identifier for the role (e.g., ADMIN, USER, MODERATOR)")
-    description: str | None = Field(None, max_length=500, description="Role description")
+    name: str = Field(..., min_length=2, max_length=255, description="Tên vai trò")
+    code: str = Field(
+        ..., 
+        min_length=1, 
+        max_length=50, 
+        pattern=r"^[A-Z][A-Z0-9_]*$", 
+        description="Mã định danh vai trò (VD: ADMIN, USER, MODERATOR)"
+    )
+    description: str | None = Field(None, max_length=500, description="Mô tả vai trò")
 
 
 class RoleCreate(RoleBase): 
+    """Schema khi tạo Role mới."""
     model_config = ConfigDict(from_attributes=True)
 
-    is_default: bool = Field(..., default=False)
-    is_system: bool = Field(..., default=False)
+    is_default: bool = Field(default=False, description="Có phải vai trò mặc định không?")
+    is_system: bool = Field(default=False, description="Có phải vai trò hệ thống không?")
 
 
 class RoleUpdate(BaseModel): 
+    """Schema khi cập nhật Role - tất cả field Optional."""
     model_config = ConfigDict(from_attributes=True)
     
-    name: Optional[str] = Field(..., min_length=8, max_length=255, description="Name role")
-    code: Optional[str] = Field(None, min_length=1, max_length=50, pattern=r"^[A-Z][A-Z0-9_]*$")
-    description: Optional[str] = Field(None, max_length=500)
-    is_default: Optional[bool] = Field(None)
-    is_system: Optional[bool] = Field(None)
+    name: Optional[str] = Field(None, min_length=2, max_length=255, description="Tên vai trò")
+    code: Optional[str] = Field(None, min_length=1, max_length=50, pattern=r"^[A-Z][A-Z0-9_]*$", description="Mã định danh vai trò")
+    description: Optional[str] = Field(None, max_length=500, description="Mô tả vai trò")
+    is_default: Optional[bool] = Field(None, description="Có phải vai trò mặc định không?")
+    is_system: Optional[bool] = Field(None, description="Có phải vai trò hệ thống không?")
+
 
 class RoleResponse(RoleBase):
     """Schema trả về cho client."""
-    id: UUID
-    is_default: bool
-    is_system: bool
-    created_at: datetime
-    updated_at: Optional[datetime] = None
+    id: UUID = Field(..., description="ID của vai trò")
+    is_default: bool = Field(..., description="Có phải vai trò mặc định không?")
+    is_system: bool = Field(..., description="Có phải vai trò hệ thống không?")
+    created_at: datetime = Field(..., description="Thời gian tạo")
+    updated_at: Optional[datetime] = Field(None, description="Thời gian cập nhật gần nhất")
+
 
 class RoleWithPermissions(RoleResponse):
     """Role kèm danh sách permissions."""
-    permissions: List["PermissionResponse"] = []
+    permissions: List["PermissionResponse"] = Field(default=[], description="Danh sách quyền của vai trò")
 
 
 class PermissionBase(BaseModel):
-    """Base schema cho Permission."""
+    """Base schema cho Permission - chứa các field chung."""
     model_config = ConfigDict(from_attributes=True)
     
-    name: str = Field(..., min_length=1, max_length=255, description="Permission name")
+    name: str = Field(..., min_length=1, max_length=255, description="Tên quyền")
     code: str = Field(
         ..., 
         min_length=1, 
         max_length=100, 
         pattern=r"^[a-z][a-z0-9_:]*$",
-        description="Permission code (e.g., user:read, user:write)"
+        description="Mã quyền (VD: user:read, user:write)"
     )
-    description: Optional[str] = Field(None, max_length=500)
-    module: str = Field(..., min_length=1, max_length=100, description="Module name (e.g., user, role)")
+    description: Optional[str] = Field(None, max_length=500, description="Mô tả quyền")
+    module: str = Field(..., min_length=1, max_length=100, description="Tên module (VD: user, role)")
 
 
 class PermissionCreate(PermissionBase):
@@ -62,9 +83,9 @@ class PermissionCreate(PermissionBase):
 
 class PermissionResponse(PermissionBase):
     """Schema trả về cho client."""
-    id: UUID
-    created_at: datetime
+    id: UUID = Field(..., description="ID của quyền")
+    created_at: datetime = Field(..., description="Thời gian tạo")
 
 
+# Rebuild model để resolve forward reference
 RoleWithPermissions.model_rebuild()
-    

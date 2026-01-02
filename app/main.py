@@ -16,7 +16,7 @@ app = FastAPI(
     title=settings.APP_NAME, 
     version=settings.APP_VERSION, 
     debug=settings.APP_DEBUG, 
-    life_span=lifespan
+    lifespan=lifespan
 )
 
 app.add_middleware(

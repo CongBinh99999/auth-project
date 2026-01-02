@@ -1,5 +1,3 @@
-# - Note: This is checked by middleware/dependencies to reject logout tokens.
-#         Can use Redis instead for better performance, but DB is fine for starter/monolith.
 from datetime import datetime, timezone
 from sqlmodel.main import SQLModel, Field, Relationship
 from typing import Optional, TYPE_CHECKING
@@ -23,7 +21,7 @@ class TokenBlacklist(SQLModel, table=True):
     token_type: TokenType = Field(nullable=False)
     user_id: uuid.UUID = Field(foreign_key="users.id")
     expires_at: datetime
-    blacklist_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    blacklisted_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     reason: Optional[str] = Field(default=None, max_length=100)
 
     #relationship 

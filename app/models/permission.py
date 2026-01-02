@@ -14,7 +14,7 @@ class Permission(SQLModel, table=True):
     name: str = Field(max_length=100)
     code: str = Field(max_length=100, unique=True)
     description: Optional[str] = Field(default=None)
-    module: str = Field(max_length=100)
+    module: Optional[str] = Field(default=None, max_length=100)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     roles: list["Role"] = Relationship(

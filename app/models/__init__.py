@@ -10,7 +10,7 @@ from app.models.user_device import UserDevice
 from app.models.user import User
 
 __all__ = [
-    "EmailVerificationToken". 
+    "EmailVerificationToken", 
     "LoginAttempt", 
     "PasswordResetToken", 
     "Permission", 
