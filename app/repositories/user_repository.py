@@ -122,6 +122,25 @@ class UserRepository:
         await self.db.flush()
 
 
+    async def verify_by_id(self, user_id: UUID) -> None:
+        """Đánh dấu user đã xác thực email.
+        
+        Args:
+            user_id: UUID của user cần verify.
+        """
+        await self.db.execute(
+            update(User)
+            .where(User.id == user_id)
+            .values(
+                is_verified=True, 
+                updated_at=datetime.now(timezone.utc)
+            )
+        )
+        await self.db.flush()
+
+
+
+
 def get_user_repository(
     db: Annotated[AsyncSession, Depends(get_db)]
 ) -> UserRepository: 

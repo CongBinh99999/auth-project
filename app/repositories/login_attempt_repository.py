@@ -150,6 +150,35 @@ class LoginAttemptRepository:
         return result.rowcount
 
 
+    async def clear_failed_attempts(self, email: str, ip_address: str, minutes: int = 15) -> int:
+        """Xóa các failed attempts gần đây sau khi login thành công.
+        
+        Args:
+            email: Email của user.
+            ip_address: IP address của user.
+            minutes: Xóa attempts trong khoảng thời gian (default: 15).
+            
+        Returns:
+            Số lượng records đã xóa.
+        """
+        cutoff = datetime.now(timezone.utc) - timedelta(minutes=minutes)
+        result = await self.db.execute(
+            delete(LoginAttempt)
+            .where(
+                and_(
+                    or_(
+                        LoginAttempt.email == email,
+                        LoginAttempt.ip_address == ip_address
+                    ),
+                    LoginAttempt.attempted_at >= cutoff,
+                    LoginAttempt.is_successful == False
+                )
+            )
+        )
+
+        return result.rowcount
+
+
 def get_login_attempt_repository(
     db: Annotated[AsyncSession, Depends(get_db)]
 ) -> LoginAttemptRepository: 

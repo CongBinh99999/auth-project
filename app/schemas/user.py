@@ -58,7 +58,7 @@ class UserUpdate(BaseModel):
 class UserResponse(UserBase):
     """Schema trả về cho client."""
     id: UUID = Field(..., description="ID của người dùng")
-    email_verified: bool = Field(default=False, description="Email đã được xác thực chưa?")
+    is_verified: bool = Field(default=False, description="Email đã được xác thực chưa?")
     created_at: datetime = Field(..., description="Thời gian tạo tài khoản")
     updated_at: Optional[datetime] = Field(None, description="Thời gian cập nhật gần nhất")
 

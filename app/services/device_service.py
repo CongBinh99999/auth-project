@@ -1,17 +1,231 @@
-# app/services/device_service.py
-# 
-# Purpose: User device management business logic.
-# 
-# Implementation details:
-# - class DeviceService:
-#     def __init__(self, db: AsyncSession)
-#     async def register_device(user_id: UUID, device_info: dict) -> UserDevice
-#     async def get_user_devices(user_id: UUID) -> list[UserDevice]
-#     async def get_device(device_id: UUID) -> UserDevice
-#     async def update_device(device_id: UUID, update_data) -> UserDevice
-#     async def trust_device(device_id: UUID) -> UserDevice
-#     async def untrust_device(device_id: UUID) -> UserDevice
-#     async def block_device(device_id: UUID) -> UserDevice
-#     async def remove_device(device_id: UUID) -> None
-#     async def remove_all_devices(user_id: UUID) -> int
-#     async def detect_device(user_agent: str, ip_address: str) -> dict
+"""Device Service - User device management.
+
+Quản lý các thiết bị đăng nhập của user bao gồm đăng ký,
+trust/untrust, block và xóa devices.
+"""
+
+from uuid import UUID 
+from typing import Annotated
+from fastapi import Depends
+from datetime import datetime, timezone
+
+
+from app.repositories.user_device_repository import (
+    UserDeviceRepoDep, 
+    UserDeviceRepository
+)
+
+from app.models.user_device import UserDevice
+
+from app.core.exceptions import DeviceNotFoundException
+
+
+class DeviceService:
+    """Service quản lý thiết bị đăng nhập của user.
+    
+    Cung cấp các chức năng:
+    - Đăng ký device mới hoặc cập nhật device đã có
+    - Trust/Untrust devices
+    - Block/Remove devices
+    - Lấy danh sách devices của user
+    
+    Attributes:
+        device_repo: Repository để thao tác với UserDevice entity.
+    """
+
+    def __init__(self, device_repo: UserDeviceRepository):
+        self.device_repo = device_repo
+
+
+    async def register_device(
+        self, 
+        user_id: UUID,
+        fingerprint: str | None = None,
+        device_name: str | None = None,
+        device_type: str | None = None,
+        browser: str | None = None,
+        os: str | None = None,
+        ip_address: str | None = None,
+        user_agent: str | None = None
+    ) -> UserDevice:
+        """Đăng ký device mới hoặc cập nhật device đã có.
+        
+        Nếu device với fingerprint đã tồn tại → cập nhật thông tin.
+        Nếu chưa → tạo mới.
+        
+        Args:
+            user_id: UUID của user.
+            fingerprint: Device fingerprint để nhận diện device.
+            device_name: Tên thiết bị (ví dụ: "iPhone của Minh").
+            device_type: Loại thiết bị (mobile, desktop, tablet).
+            browser: Tên trình duyệt.
+            os: Hệ điều hành.
+            ip_address: IP address.
+            user_agent: User agent string.
+            
+        Returns:
+            UserDevice entity (mới tạo hoặc đã cập nhật).
+        """
+        device = None 
+
+        if fingerprint: 
+            device = await self.device_repo.get_by_fingerprint(fingerprint)
+        
+        if not device: 
+            return await self.device_repo.create(
+                user_id=user_id,
+                fingerprint=fingerprint,
+                device_name=device_name,
+                device_type=device_type,
+                browser=browser,
+                os=os,
+                ip_address=ip_address,
+                user_agent=user_agent,
+                last_login_at=datetime.now(timezone.utc)
+            )
+        else: 
+            updated_data = {
+                "device_name": device_name,
+                "device_type": device_type,
+                "browser": browser,
+                "os": os,
+                "ip_address": ip_address,
+                "user_agent": user_agent,
+                "last_login_at": datetime.now(timezone.utc)
+            }
+
+            clean_data = {
+                key: value for key, value in updated_data.items() if value is not None 
+            } 
+
+            return await self.device_repo.update(
+                device, 
+                **clean_data
+            )
+
+
+    async def get_user_devices(self, user_id: UUID) -> list[UserDevice]:
+        """Lấy danh sách tất cả devices của user.
+        
+        Args:
+            user_id: UUID của user.
+            
+        Returns:
+            Danh sách UserDevice entities.
+        """
+        return await self.device_repo.get_by_user_id(user_id)
+
+
+    async def get_device_by_id(self, device_id: UUID, user_id: UUID) -> UserDevice:
+        """Lấy device theo ID, đảm bảo thuộc về user.
+        
+        Args:
+            device_id: UUID của device.
+            user_id: UUID của user (để verify ownership).
+            
+        Returns:
+            UserDevice entity.
+            
+        Raises:
+            DeviceNotFoundException: Device không tồn tại hoặc không thuộc về user.
+        """
+        device = await self.device_repo.get_device_by_id(device_id, user_id)
+
+        if not device: 
+            raise DeviceNotFoundException()
+        
+        return device
+
+
+    async def trust_device(self, device_id: UUID, user_id: UUID) -> UserDevice:
+        """Đánh dấu device là trusted.
+        
+        Trusted devices có thể được cấp token với thời hạn dài hơn
+        hoặc bỏ qua 2FA.
+        
+        Args:
+            device_id: UUID của device.
+            user_id: UUID của user.
+            
+        Returns:
+            UserDevice đã cập nhật.
+        """
+        device = await self.get_device_by_id(device_id, user_id)
+
+        return await self.device_repo.set_trusted(device, True)
+
+
+    async def untrust_device(self, device_id: UUID, user_id: UUID) -> UserDevice:
+        """Gỡ trust status của device.
+        
+        Args:
+            device_id: UUID của device.
+            user_id: UUID của user.
+            
+        Returns:
+            UserDevice đã cập nhật.
+        """
+        device = await self.get_device_by_id(device_id, user_id)
+
+        return await self.device_repo.set_trusted(device, False)
+    
+
+    async def block_device(self, device_id: UUID, user_id: UUID) -> UserDevice:
+        """Block device - không cho phép đăng nhập từ device này.
+        
+        Args:
+            device_id: UUID của device.
+            user_id: UUID của user.
+            
+        Returns:
+            UserDevice đã cập nhật.
+        """
+        device = await self.get_device_by_id(device_id, user_id)
+
+        return await self.device_repo.set_status(device=device, status="blocked")
+    
+
+    async def remove_device(self, device_id: UUID, user_id: UUID) -> None:
+        """Xóa device khỏi danh sách.
+        
+        Args:
+            device_id: UUID của device.
+            user_id: UUID của user.
+        """
+        device = await self.get_device_by_id(device_id, user_id)
+
+        await self.device_repo.delete(device)
+
+
+    async def remove_all_devices(self, user_id: UUID) -> int:
+        """Xóa tất cả devices của user.
+        
+        Args:
+            user_id: UUID của user.
+            
+        Returns:
+            Số lượng devices đã xóa.
+        """
+        return await self.device_repo.delete_all_by_user(user_id)
+    
+    
+    async def update_device_last_login(self, device: UserDevice) -> UserDevice:
+        """Cập nhật thời gian login cuối cùng của device.
+        
+        Args:
+            device: UserDevice entity cần cập nhật.
+            
+        Returns:
+            UserDevice đã cập nhật.
+        """
+        return await self.device_repo.update_last_login(device)
+    
+    
+def get_device_service(
+    device_repo: UserDeviceRepoDep
+) -> DeviceService:
+    """Dependency injection factory cho DeviceService."""
+    return DeviceService(device_repo)
+
+
+DeviceServiceDep = Annotated[DeviceService, Depends(get_device_service)]

@@ -6,6 +6,8 @@ from jose import jwt
 from datetime import datetime, timedelta, timezone 
 from app.config.settings import get_settings
 from typing import Optional, Any
+import hashlib
+import secrets
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -66,15 +68,18 @@ def create_refresh_token(
     return create_token(subject, "refresh", extra_claims=extra_claims)
 
 def decode_token(
-    token: str
+    token: str  
 ) -> TokenPayload: 
     data = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
     return TokenPayload(**data)
 
 def generate_verification_token() -> tuple[str, str]: 
     plain_token = str(uuid.uuid4())
-    hashed_token = hash_password(plain_token)
+    hashed_token = hash_verification_token(plain_token)
     return plain_token, hashed_token
 
 def verify_verification_token(plain_token: str, hashed_token: str) -> bool: 
-    return verify_password(plain_token, hashed_token)    
+    return hash_verification_token(plain_token) == hashed_token    
+
+def hash_verification_token(token: str) -> str: 
+    return hashlib.sha256(token.encode()).hexdigest()

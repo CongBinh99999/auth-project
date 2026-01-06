@@ -70,9 +70,43 @@ class PermissionDeniedException(HTTPException):
         )
 
 
+class PermissionNotFoundException(HTTPException):
+    def __init__(self):
+        super().__init__(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Permission not found",
+        )
+
+
+
+
 class RoleNotFoundException(HTTPException):
     def __init__(self):
         super().__init__(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Role not found",
+        )
+
+
+class CodeRoleExistsException(HTTPException):
+    def __init__(self): 
+        super().__init__(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Code Role already"
+        )
+
+
+class DeviceNotFoundException(HTTPException): 
+    def __init__(self):
+        super().__init__(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail= "Device Not found"
+        )
+
+
+class TooManyLoginAttemptsException(HTTPException):
+    def __init__(self):
+        super().__init__(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Login too many"
         )

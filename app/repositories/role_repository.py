@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from uuid import UUID
 from typing import Optional, Annotated, List
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update, delete, join
+from sqlalchemy import select, update, delete, join, and_
 from fastapi import Depends
 
 from app.config.database import get_db
@@ -150,6 +150,33 @@ class RoleRepository:
         )
         
         return list(result.scalars().all())
+
+    
+    async def add_permission(self, role_id: UUID, permission_id: UUID) -> None: 
+        result = await self.db.execute(
+            select(RolePermission)
+            .filter_by(
+                role_id = role_id, 
+                permission_id = permission_id
+            )
+        )
+        existing = result.scalars().first()
+
+        if not existing: 
+            new_permission = RolePermission(role_id=role_id, permission_id=permission_id)
+            self.db.add(new_permission) 
+            await self.db.flush()
+
+
+    async def remove_permission(self, role_id: UUID, permission_id: UUID) -> None: 
+        await self.db.execute(
+            delete(RolePermission)
+            .where(
+                RolePermission.role_id == role_id, 
+                RolePermission.permission_id == permission_id
+            )
+        )
+        await self.db.flush()
 
 
 def get_role_repository(

@@ -198,6 +198,20 @@ class UserDeviceRepository:
         await self.db.flush()
 
         return result.rowcount
+    
+
+    async def get_device_by_id(self, device_id: UUID, user_id: UUID) -> Optional[UserDevice]: 
+        result = await self.db.execute(
+            select(UserDevice)
+            .where(
+                and_(
+                    UserDevice.id == device_id, 
+                    UserDevice.user_id == user_id
+                )
+            )
+        )
+        
+        return result.scalar_one_or_none()
 
 
 def get_user_device_repository(
