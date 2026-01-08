@@ -2,7 +2,7 @@ from sqlmodel import SQLModel, Field, Relationship
 import uuid
 from typing import Optional, TYPE_CHECKING
 from datetime import datetime, timezone
-
+from sqlalchemy import DateTime
 if TYPE_CHECKING: 
     from app.models.user import User
 
@@ -15,7 +15,7 @@ class LoginAttempt(SQLModel, table=True):
     user_agent: Optional[str] = None 
     is_successful: bool = Field(default=False)
     failure_reason: Optional[str] = Field(max_length=100, default=None)
-    attempted_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    attempted_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), sa_type=DateTime(timezone=True))
 
     #relationship
     user:Optional["User"] = Relationship(back_populates="login_attempts")

@@ -19,11 +19,12 @@ from app.repositories.role_repository import(
     RoleRepoDep
 )
 
-from app.services.token_service import TokenService
-from app.services.token_family_service import TokenFamilyService
-from app.services.login_attempt_service import LoginAttemptService
-from app.services.device_service import DeviceService
-from app.services.email_verification_service import EmailVerificationService
+from app.services.token_service import TokenService, TokenBlacklistServiceDep
+from app.services.token_family_service import TokenFamilyService, TokenFamilyServiceDep
+from app.services.login_attempt_service import LoginAttemptService, LoginAttemptServiceDep
+from app.services.device_service import DeviceService, DeviceServiceDep
+from app.services.email_verification_service import EmailVerificationService, EmailVerificationServiceDep
+from app.services.email_service import EmailService, EmailServiceDep
 
 from app.core.security import (
     hash_password,
@@ -77,7 +78,8 @@ class AuthService:
         token_service: TokenService,
         token_family_service: TokenFamilyService,
         login_attempt_service: LoginAttemptService,
-        email_verification_service: EmailVerificationService, 
+        email_verification_service: EmailVerificationService,
+        email_service: EmailService,
         device_service: DeviceService | None = None
     ): 
         self.user_repo = user_repo
@@ -86,6 +88,7 @@ class AuthService:
         self.token_family_service = token_family_service
         self.login_attempt_service = login_attempt_service
         self.email_verification_service = email_verification_service
+        self.email_service = email_service
         self.device_service = device_service
 
 
@@ -133,7 +136,16 @@ class AuthService:
             role_id=default_role.id
         )
 
-        await self.email_verification_service.create_verification_token(new_user.id)
+        verification_token = await self.email_verification_service.create_verification_token(
+            user_id=new_user.id,
+            email=new_user.email
+        )
+        
+        # Gửi email xác thực
+        self.email_service.send_verification_email(
+            to_email=new_user.email,
+            token=verification_token
+        )
 
         return UserResponse.model_validate(new_user)
 
@@ -179,52 +191,35 @@ class AuthService:
         ip_address: str,
         user_agent: str | None = None
     ) -> TokenResponse:
-        """Đăng nhập và cấp tokens.
+        """Đăng nhập và cấp tokens."""
         
-        Flow:
-        1. Kiểm tra rate limiting
-        2. Xác thực user
-        3. Ghi nhận login attempt
-        4. Register/Update device (nếu có device_service)
-        5. Tạo token family
-        6. Tạo access + refresh tokens
-        7. Update last_login
-        
-        Args:
-            email: Email đăng nhập.
-            password: Mật khẩu.
-            ip_address: IP address của request.
-            user_agent: User agent string (optional).
-            
-        Returns:
-            TokenResponse chứa access_token và refresh_token.
-            
-        Raises:
-            TooManyLoginAttemptsException: Vượt quá số lần thử.
-            InvalidCredentialsException: Credentials sai.
-            UserInactiveException: Tài khoản bị khóa.
-            UserNotVerifiedException: Email chưa xác thực.
-        """
         if await self.login_attempt_service.is_blocked(email, ip_address):
             raise TooManyLoginAttemptsException()
 
         try:
             user = await self.authenticate_user(email, password)
         except InvalidCredentialsException:
-            await self.login_attempt_service.record_attempt(email, ip_address, False, None, user_agent, "invalid_credentials")
+            await self.login_attempt_service.record_attempt(
+                email, ip_address, False, None, user_agent, "invalid_credentials"
+            )
             raise
         except UserInactiveException:
-            await self.login_attempt_service.record_attempt(email, ip_address, False, None, user_agent, "user_inactive")
+            await self.login_attempt_service.record_attempt(
+                email, ip_address, False, None, user_agent, "user_inactive"
+            )
             raise
         except UserNotVerifiedException:
-            await self.login_attempt_service.record_attempt(email, ip_address, False, None, user_agent, "user_not_verified")
+            await self.login_attempt_service.record_attempt(
+                email, ip_address, False, None, user_agent, "user_not_verified"
+            )
             raise
 
-        await self.login_attempt_service.record_attempt(email, ip_address, True, user.id, user_agent)
+        await self.login_attempt_service.record_attempt(
+            email, ip_address, True, user.id, user_agent
+        )
         await self.login_attempt_service.clear_attempts_on_success(email, ip_address)
 
         device = None
-
         if self.device_service:
             device = await self.device_service.register_device(
                 user_id=user.id,
@@ -232,10 +227,11 @@ class AuthService:
                 user_agent=user_agent
             )
 
-        initial_jti = str(uuid4())
+        refresh_jti = str(uuid4())
+        
         token_family = await self.token_family_service.create_family(
             user_id=user.id,
-            initial_jti=initial_jti,
+            initial_jti=refresh_jti,  
             device_id=device.id if device else None
         )
 
@@ -247,41 +243,28 @@ class AuthService:
         if device:
             await self.device_service.update_device_last_login(device)
 
-        return await self.token_service.create_pair_token(user_id=user.id, family_id=token_family.id)
+        return self.token_service.create_pair_token(
+            user_id=user.id, 
+            family_id=token_family.id,
+            refresh_jti=refresh_jti 
+        )
 
 
     async def refresh_token(self, refresh_token: str) -> TokenResponse:
-        """Làm mới access token.
+        """Làm mới access token."""
         
-        Sử dụng Refresh Token Rotation để bảo mật.
-        
-        Flow:
-        1. Validate refresh token
-        2. Rotate token family (cập nhật current_jti)
-        3. Cập nhật last_used
-        4. Tạo cặp tokens mới
-        
-        Args:
-            refresh_token: Refresh token string.
-            
-        Returns:
-            TokenResponse với tokens mới.
-            
-        Raises:
-            InvalidTokenException: Token không hợp lệ.
-            TokenExpiredException: Token hết hạn.
-            TokenRevokedException: Phát hiện token theft.
-        """
         family, payload = await self.token_family_service.validate_refresh_token(refresh_token)
 
         new_jti = str(uuid4())
+        
         await self.token_family_service.rotate_token(family, new_jti)
 
         await self.token_family_service.update_last_used(family)
 
-        return await self.token_service.create_pair_token(
+        return self.token_service.create_pair_token(
             user_id=family.user_id,
-            family_id=family.id
+            family_id=family.id,
+            refresh_jti=new_jti 
         )
 
 
@@ -300,7 +283,7 @@ class AuthService:
         await self.token_service.blacklist_token(
             jti=str(payload.jti),
             token_type=TokenType.ACCESS,
-            user_id=UUID(payload.sub),
+            user_id=payload.sub,
             expires_at=payload.exp
         )
         if refresh_token:
@@ -325,11 +308,12 @@ class AuthService:
 def get_auth_service(
     user_repo: UserRepoDep, 
     role_repo: RoleRepoDep,
-    token_service: TokenService,
-    token_family_service: TokenFamilyService, 
-    login_attempt_service: LoginAttemptService,
-    email_verification_service: EmailVerificationService,
-    device_service: DeviceService | None = None
+    token_service: TokenBlacklistServiceDep,
+    token_family_service: TokenFamilyServiceDep, 
+    login_attempt_service: LoginAttemptServiceDep,
+    email_verification_service: EmailVerificationServiceDep,
+    email_service: EmailServiceDep,
+    device_service: DeviceServiceDep
 ) -> AuthService:
     """Dependency injection factory cho AuthService."""
     return AuthService(
@@ -339,6 +323,7 @@ def get_auth_service(
         token_family_service, 
         login_attempt_service,
         email_verification_service,
+        email_service,
         device_service
     )
 

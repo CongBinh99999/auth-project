@@ -1,19 +1,25 @@
-from enum import StrEnum
-
-class TokenType(StrEnum):
-    """Token type constants."""
-    ACCESS = "access"
-    REFRESH = "refresh"
+from enum import Enum
 
 
-class DeviceStatus(StrEnum):
+class TokenType(str, Enum):
+    """Token type constants"""
+    ACCESS = "access"   
+    REFRESH = "refresh" 
+    
+    def __str__(self):
+        return self.value
+
+
+
+
+class DeviceStatus(str, Enum):
     """Device status constants."""
     ACTIVE = "active"
     INACTIVE = "inactive"
     BLOCKED = "blocked"
 
 
-class ErrorMessage(StrEnum):
+class ErrorMessage(str, Enum):
     """Error message constants."""
     INVALID_CREDENTIALS = "Invalid email or password"
     USER_NOT_FOUND = "User not found"
@@ -27,7 +33,7 @@ class ErrorMessage(StrEnum):
     ROLE_NOT_FOUND = "Role not found"
 
 
-class SuccessMessage(StrEnum):
+class SuccessMessage(str, Enum):
     """Success message constants."""
     USER_CREATED = "User created successfully"
     USER_VERIFIED = "Email verified successfully"

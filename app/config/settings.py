@@ -22,6 +22,11 @@ class Settings(BaseSettings):
     
     PASSWORD_RESET_EXPIRE_MINUTES: int = 15
 
+    SMTP_SERVER: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USERNAME: str = ""
+    SMTP_PASSWORD: str = ""
+
     CORS_ORIGINS: list[str] = ["http://localhost:3000","http://localhost:5173"]
 
     model_config = SettingsConfigDict(

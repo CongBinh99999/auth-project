@@ -1,10 +1,9 @@
-# Purpose: Database model for Users.
-
 from typing import List
 from sqlmodel.main import SQLModel, Field, Relationship
 import uuid
 from typing import Optional, TYPE_CHECKING
 from datetime import datetime, timezone
+from sqlalchemy import DateTime
 
 if TYPE_CHECKING: 
     from app.models.role import Role
@@ -25,9 +24,9 @@ class User(SQLModel, table=True):
     is_active: bool = Field(default=True)
     is_verified: bool = Field(default=False)
     role_id: uuid.UUID = Field(foreign_key="roles.id")
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    last_login_at: Optional[datetime] = Field(default=None, nullable=True)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), sa_type=DateTime(timezone=True))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), sa_type=DateTime(timezone=True))
+    last_login_at: Optional[datetime] = Field(default=None, nullable=True, sa_type=DateTime(timezone=True))
 
     #relationship 
     role: Optional["Role"] = Relationship(back_populates="users")

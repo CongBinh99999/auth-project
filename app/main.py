@@ -26,6 +26,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+from app.api.router import api_router
+app.include_router(api_router)
 
 @app.get("/health")
 async def health_check(): 

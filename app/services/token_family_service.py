@@ -187,6 +187,23 @@ class TokenFamilyService:
         return await self.token_family_repo.get_by_jti(jti)
 
 
+    async def update_current_jti(self, family_id: UUID, new_jti: str) -> TokenFamily:
+        """Update current JTI của token family.
+        
+        Args:
+            family_id: UUID của token family
+            new_jti: JTI mới
+            
+        Returns:
+            TokenFamily đã cập nhật
+        """
+        family = await self.token_family_repo.get_by_id(family_id)
+        if not family:
+            raise InvalidTokenException("Token family not found")
+        
+        return await self.token_family_repo.update_token(family, new_jti=new_jti)
+
+
     async def update_last_used(self, family: TokenFamily) -> TokenFamily:
         """Cập nhật last_used_at của token family.
         

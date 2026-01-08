@@ -10,7 +10,7 @@ Bao gồm:
 """
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator, field_validator
 from typing import Optional, Any, List
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 from typing_extensions import Self
 
@@ -75,6 +75,7 @@ class LogoutRequest(BaseModel):
     """Request schema cho đăng xuất."""
     model_config = ConfigDict(from_attributes=True)
     
+    access_token: Optional[str] = Field(..., description="Access token cần vô hiệu hóa")
     refresh_token: Optional[str] = Field(None, description="Refresh token cần vô hiệu hóa")
     logout_all_devices: bool = Field(default=False, description="Đăng xuất khỏi tất cả thiết bị")
 
@@ -130,7 +131,7 @@ class TokenPayload(BaseModel):
     @property
     def is_expired(self) -> bool:
         """Kiểm tra token đã hết hạn chưa."""
-        return datetime.utcnow() > self.exp
+        return datetime.now(timezone.utc) > self.exp
 
 
 class TokenInfo(BaseModel):

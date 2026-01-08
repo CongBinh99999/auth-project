@@ -8,7 +8,7 @@ from uuid import UUID
 from typing import Annotated
 from fastapi import Depends
 from datetime import datetime, timezone
-
+from app.utils.constants import DeviceStatus
 
 from app.repositories.user_device_repository import (
     UserDeviceRepoDep, 
@@ -16,6 +16,7 @@ from app.repositories.user_device_repository import (
 )
 
 from app.models.user_device import UserDevice
+from app.schemas.device import DeviceUpdate
 
 from app.core.exceptions import DeviceNotFoundException
 
@@ -69,7 +70,7 @@ class DeviceService:
         device = None 
 
         if fingerprint: 
-            device = await self.device_repo.get_by_fingerprint(fingerprint)
+            device = await self.device_repo.get_by_fingerprint(user_id, fingerprint)
         
         if not device: 
             return await self.device_repo.create(
@@ -182,7 +183,7 @@ class DeviceService:
         """
         device = await self.get_device_by_id(device_id, user_id)
 
-        return await self.device_repo.set_status(device=device, status="blocked")
+        return await self.device_repo.set_status(device=device, status=DeviceStatus.BLOCKED)
     
 
     async def remove_device(self, device_id: UUID, user_id: UUID) -> None:
@@ -220,6 +221,23 @@ class DeviceService:
         """
         return await self.device_repo.update_last_login(device)
     
+
+    async def update(self, 
+        user_id: UUID, 
+        device_id: UUID, 
+        update_schema: DeviceUpdate
+    ) -> UserDevice: 
+        device = await self.get_device_by_id(
+            device_id=device_id, 
+            user_id=user_id
+        )
+
+        update_data = update_schema.model_dump(exclude_unset=True)
+
+        return await self.device_repo.update(
+            device, 
+            **update_data
+        )
     
 def get_device_service(
     device_repo: UserDeviceRepoDep

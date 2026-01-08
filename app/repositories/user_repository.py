@@ -2,12 +2,14 @@ from datetime import datetime, timezone
 from uuid import UUID
 from typing import Optional, List, Annotated
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, delete, update, and_, or_, func
+from sqlalchemy import select, delete, update, and_, or_, func 
+from sqlalchemy.orm import selectinload
 from fastapi import Depends
 
 
 from app.config.database import get_db
 from app.models.user import User 
+from app.models.role import Role
 from app.schemas.user import UserCreate, UserUpdate
 
 
@@ -33,7 +35,11 @@ class UserRepository:
             User nếu tìm thấy, None nếu không.
         """
         result = await self.db.execute(
-            select(User).where(User.id == user_id)
+            select(User)
+            .where(User.id == user_id)
+            .options(
+                selectinload(User.role).selectinload(Role.permissions)
+            )
         )
 
         return result.scalar_one_or_none()

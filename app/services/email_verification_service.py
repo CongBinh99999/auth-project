@@ -52,11 +52,12 @@ class EmailVerificationService:
         self.verification_repo = verification_repo
 
 
-    async def create_verification_token(self, user_id: UUID) -> str:
+    async def create_verification_token(self, user_id: UUID, email: str) -> str:
         """Tạo verification token mới cho user.
         
         Args:
             user_id: UUID của user cần xác thực email.
+            email: Email của user.
             
         Returns:
             Plain token string (gửi trong email link).
@@ -67,10 +68,14 @@ class EmailVerificationService:
         """
         plain_token, hashed_token = generate_verification_token()
         expires_at = datetime.now(timezone.utc) + timedelta(minutes=setting.EMAIL_VERIFICATION_EXPIRE_MINUTES)
+        
+        
+
 
         await self.verification_repo.create(
             user_id=user_id, 
             token_hash=hashed_token, 
+            email=email,
             expires_at=expires_at
         )
 
@@ -123,8 +128,13 @@ class EmailVerificationService:
         Returns:
             Plain token mới (để gửi trong email).
         """
+        user = await self.user_repo.get_by_id(user_id)
+        if not user:
+             # Should practically not happen if called correctly
+             raise InvalidTokenException()
+
         await self.verification_repo.delete_by_user(user_id)
-        return await self.create_verification_token(user_id)
+        return await self.create_verification_token(user_id, user.email)
     
 
     async def has_pending_verification(self, user_id: UUID) -> bool:

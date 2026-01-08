@@ -84,7 +84,9 @@ class RoleService:
         self, 
         code: str,
         name: str,
-        description: str | None = None
+        description: str | None = None,
+        is_default: bool = False,
+        is_system: bool = False
     ) -> RoleResponse:
         """Tạo role mới.
         
@@ -92,6 +94,8 @@ class RoleService:
             code: Mã role (unique, ví dụ: 'admin', 'user').
             name: Tên hiển thị của role.
             description: Mô tả role (optional).
+            is_default: Có phải role mặc định không.
+            is_system: Có phải role hệ thống không.
             
         Returns:
             RoleResponse chứa thông tin role vừa tạo.
@@ -106,7 +110,9 @@ class RoleService:
         new_role = await self.role_repo.create(
             code=code,
             name=name,
-            description=description
+            description=description,
+            is_default=is_default,
+            is_system=is_system
         )
 
         return RoleResponse.model_validate(new_role)
@@ -117,7 +123,9 @@ class RoleService:
         role_id: UUID, 
         code: str | None = None,
         name: str | None = None,
-        description: str | None = None
+        description: str | None = None,
+        is_default: bool | None = None,
+        is_system: bool | None = None
     ) -> RoleResponse:
         """Cập nhật thông tin role.
         
@@ -128,6 +136,8 @@ class RoleService:
             code: Mã role mới (optional).
             name: Tên mới (optional).
             description: Mô tả mới (optional).
+            is_default: Trạng thái mặc định mới (optional).
+            is_system: Trạng thái hệ thống mới (optional).
             
         Returns:
             RoleResponse chứa thông tin đã cập nhật.
@@ -149,7 +159,9 @@ class RoleService:
             k: v for k, v in {
                 "code": code,
                 "name": name,
-                "description": description
+                "description": description,
+                "is_default": is_default,
+                "is_system": is_system
             }.items() if v is not None
         }
         

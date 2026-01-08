@@ -1,14 +1,123 @@
-# app/api/v1/devices.py
-# 
-# Purpose: User device management endpoints.
-# 
-# Implementation details:
-# - router = APIRouter(prefix="/devices", tags=["Devices"])
-# - GET / -> DeviceController.get_my_devices
-# - GET /{device_id} -> DeviceController.get_device
-# - PUT /{device_id} -> DeviceController.update_device
-# - POST /{device_id}/trust -> DeviceController.trust_device
-# - DELETE /{device_id}/trust -> DeviceController.untrust_device
-# - DELETE /{device_id} -> DeviceController.remove_device
-# - DELETE / -> DeviceController.remove_all_devices
-# - Dependencies: DbSession, ActiveUser
+from fastapi import APIRouter, status, Depends
+from uuid import UUID
+
+from app.core.dependencies import ActiveUser
+from app.services.device_service import DeviceServiceDep
+from app.schemas.device import (
+    DeviceListResponse,
+    DeviceResponse,
+    DeviceUpdate
+)
+from fastapi.security import HTTPBearer
+
+router = APIRouter(
+    prefix="/devices", 
+    tags=["Devices"],
+    # dependencies=[Depends(HTTPBearer())] 
+)
+
+
+@router.get(
+    "/",
+    response_model=DeviceListResponse,
+    summary="lấy tất cả thiết bị của user"
+)
+async def get_my_devices(
+    user: ActiveUser,
+    device_service: DeviceServiceDep
+) -> DeviceListResponse: 
+    devices =  await device_service.get_user_devices(user_id=user.id)
+
+    return DeviceListResponse(
+        devices=devices,
+        total_count=len(devices)
+    )
+
+
+@router.get(
+    "/{device_id}", 
+    response_model=DeviceResponse,
+    summary="Lấy thông tin một thiết bị"
+)
+async def get_device(
+    device_id: UUID,
+    user: ActiveUser, 
+    device_service: DeviceServiceDep
+) -> DeviceResponse: 
+    return await device_service.get_device_by_id(device_id, user.id)
+
+
+@router.patch(
+    "/{device_id}", 
+    response_model=DeviceResponse, 
+    summary="cập nhật thông tin thiết bị"
+)
+async def update_device(
+    user: ActiveUser, 
+    device_service: DeviceServiceDep, 
+    device_id: UUID, 
+    data: DeviceUpdate 
+) -> DeviceResponse: 
+    
+    return await device_service.update(
+        user_id=user.id,
+        device_id=device_id,
+        update_schema=data
+    )
+
+
+@router.post(
+    "/{device_id}/trust", 
+    response_model=DeviceResponse,
+    summary="Đánh dấu thiết bị là trusted"
+)
+async def trust_device(
+    device_id: UUID,
+    user: ActiveUser,
+    device_service: DeviceServiceDep
+):
+    return await device_service.trust_device(device_id, user.id)
+
+
+@router.delete(
+    "/{device_id}/trust", 
+    response_model=DeviceResponse,
+    summary="Gỡ trust khỏi thiết bị"
+)
+async def untrust_device(
+    device_id: UUID,
+    user: ActiveUser,
+    device_service: DeviceServiceDep
+):
+    return await device_service.untrust_device(device_id, user.id)
+
+
+@router.delete(
+    "/{device_id}", 
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Xóa thiết bị"
+)
+async def remove_device(
+    device_id: UUID,
+    user: ActiveUser,
+    device_service: DeviceServiceDep
+):
+    await device_service.remove_device(device_id, user.id)
+
+
+@router.delete(
+    "/", 
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Xóa tất cả thiết bị"
+)
+async def remove_all_devices(
+    user: ActiveUser,
+    device_service: DeviceServiceDep
+):
+    await device_service.remove_all_devices(user.id)
+
+    
+
+    
+
+

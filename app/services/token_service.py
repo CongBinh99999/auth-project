@@ -23,7 +23,8 @@ from app.models.token_blacklist import TokenBlacklist, TokenType
 from app.core.security import (
     create_access_token,
     create_refresh_token,
-    decode_token
+    decode_token,
+    create_token
 )
 
 from app.core.exceptions import (
@@ -33,7 +34,7 @@ from app.core.exceptions import (
 
 from app.config.settings import get_settings
 
-setting = get_settings()
+settings = get_settings()
 
 
 class TokenService:
@@ -88,31 +89,32 @@ class TokenService:
         )
 
 
-    def create_pair_token(self, user_id: UUID, family_id: UUID) -> TokenResponse:
-        """Tạo cặp access + refresh tokens.
+    def create_pair_token(
+        self, 
+        user_id: UUID, 
+        family_id: UUID,
+        refresh_jti: str | None = None 
+    ) -> TokenResponse:
+        """Create access and refresh token pair."""
         
-        Args:
-            user_id: UUID của user.
-            family_id: UUID của token family.
-            
-        Returns:
-            TokenResponse chứa cả access và refresh tokens.
-        """
-        access_token, access_jti, access_exp = self.create_access_token(
-            user_id=user_id,
-            family_id=family_id
+        access_token, _, _ = create_token(
+            subject=str(user_id),
+            token_type="access",
+            extra_claims={"family_id": str(family_id)}
         )
-
-        refresh_token, refresh_jti, refresh_exp = self.create_refresh_token(
-            user_id=user_id,
-            family_id=family_id
+        
+        refresh_token, _, _ = create_token(
+            subject=str(user_id),
+            token_type="refresh",
+            extra_claims={"family_id": str(family_id)},
+            jti=refresh_jti  
         )
-
+        
         return TokenResponse(
             access_token=access_token,
-            refresh_token=refresh_token, 
+            refresh_token=refresh_token,
             token_type="bearer",
-            expires_in=setting.ACCESS_TOKEN_EXPIRE_MINUTES * 60
+            expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
         )
 
 
