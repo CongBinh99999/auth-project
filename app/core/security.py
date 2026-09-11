@@ -3,7 +3,7 @@ import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from jose import jwt
+from jose import JWTError, jwt
 from passlib.context import CryptContext
 
 from app.config.settings import get_settings
@@ -60,21 +60,15 @@ def create_token(
 
     return token, token_jti, expires_at
 
-def create_access_token(
-    subject: str, 
-    extra_claims: dict[str, Any] | None = None
-) -> tuple[str, str, datetime]:
-    return create_token(subject, "access", extra_claims=extra_claims)
-
-def create_refresh_token(
-    subject: str, 
-    extra_claims: dict[str, Any] | None = None
-) -> tuple[str, str, datetime]:
-    return create_token(subject, "refresh", extra_claims=extra_claims)
-
-def decode_token(token: str) -> TokenPayload:
+def decode_token(token: str, expected_type: str | None = None) -> TokenPayload:
+    """Decode JWT. Nếu truyền expected_type, token sai loại sẽ bị từ chối."""
     data = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
-    return TokenPayload(**data)
+    payload = TokenPayload(**data)
+
+    if expected_type is not None and payload.type != expected_type:
+        raise JWTError(f"Expected {expected_type} token, got {payload.type}")
+
+    return payload
 
 def generate_verification_token() -> tuple[str, str]:
     plain_token = str(uuid.uuid4())
