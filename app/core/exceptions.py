@@ -111,10 +111,3 @@ class TooManyLoginAttemptsException(HTTPException):
             detail="Login too many"
         )
 
-
-class EmailSendFailedException(HTTPException):
-    def __init__(self):
-        super().__init__(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Could not send verification email",
-        )

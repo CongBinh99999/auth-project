@@ -8,11 +8,10 @@ from datetime import UTC, datetime
 from typing import Annotated
 from uuid import UUID, uuid4
 
-from fastapi import Depends
+from fastapi import BackgroundTasks, Depends
 
 from app.core.exceptions import (
     EmailExistsException,
-    EmailSendFailedException,
     InvalidCredentialsException,
     RoleNotFoundException,
     TooManyLoginAttemptsException,
@@ -88,6 +87,7 @@ class AuthService:
         self, 
         email: str, 
         password: str, 
+        background_tasks: BackgroundTasks,
         full_name: str | None = None
     ) -> UserResponse:
         """Đăng ký tài khoản mới.
@@ -133,8 +133,13 @@ class AuthService:
             email=new_user.email
         )
         
-        # Gửi email xác thực
-        self.email_service.send_verification_email(
+        # BackgroundTasks chạy TRƯỚC khi get_db commit (đo trên fastapi 0.141 /
+        # starlette 1.6): response -> task -> COMMIT. Nên phải commit tại đây,
+        # nếu không mail có thể mang token của một transaction bị rollback.
+        await self.user_repo.db.commit()
+
+        background_tasks.add_task(
+            self.email_service.send_verification_email,
             to_email=new_user.email,
             token=verification_token
         )
@@ -142,22 +147,28 @@ class AuthService:
         return UserResponse.model_validate(new_user)
 
 
-    async def resend_verification(self, email: str) -> None:
+    async def resend_verification(self, email: str, background_tasks: BackgroundTasks) -> None:
         """Gửi lại email xác thực.
 
-        Im lặng khi email không tồn tại hoặc đã xác thực, để route không
-        tiết lộ email nào có trong hệ thống.
+        Im lặng khi email không tồn tại, đã xác thực, hoặc còn trong cooldown,
+        để route không tiết lộ email nào có trong hệ thống.
         """
         user = await self.user_repo.get_by_email(email)
         if not user or user.is_verified:
             return
 
         token = await self.email_verification_service.resend_email(user.id)
+        if token is None:
+            return
 
-        if not self.email_service.send_verification_email(to_email=user.email, token=token):
-            # resend_email đã xoá token cũ; raise để get_db rollback, giữ lại link cũ
-            # thay vì khoá user ra ngoài vĩnh viễn.
-            raise EmailSendFailedException()
+        # Xem ghi chú ở register(): phải commit trước khi lên lịch gửi mail.
+        await self.user_repo.db.commit()
+
+        background_tasks.add_task(
+            self.email_service.send_verification_email,
+            to_email=user.email,
+            token=token
+        )
 
 
     async def authenticate_user(self, email: str, password: str) -> User:

@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     SMTP_PORT: int = 587
     SMTP_USERNAME: str = ""
     SMTP_PASSWORD: str = ""
+    SMTP_TIMEOUT: int = 10
+
+    RESEND_VERIFICATION_COOLDOWN_SECONDS: int = 60
 
     CORS_ORIGINS: list[str] = ["http://localhost:3000","http://localhost:5173"]
 
