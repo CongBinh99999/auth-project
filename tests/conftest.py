@@ -9,9 +9,11 @@ from uuid import uuid4
 
 import pytest
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy import delete
 
 from app.config.database import AsyncSessionLocal
 from app.main import app
+from app.models.login_attempt import LoginAttempt
 from app.repositories.user_repository import UserRepository
 
 # httpx cần một base_url hợp lệ; không có request nào ra mạng thật.
@@ -25,6 +27,19 @@ async def async_client() -> AsyncGenerator[AsyncClient]:
         transport=ASGITransport(app=app), base_url=BASE_URL
     ) as client:
         yield client
+
+
+@pytest.fixture(autouse=True)
+async def clean_login_attempts():
+    """Mỗi test bắt đầu với bộ đếm brute-force sạch.
+
+    Qua ASGITransport mọi request đều mang IP 127.0.0.1, nên nếu không dọn thì
+    các lần login sai của test này sẽ chạm ngưỡng IP và khoá test sau.
+    """
+    async with AsyncSessionLocal() as session:
+        await session.execute(delete(LoginAttempt))
+        await session.commit()
+    yield
 
 
 @pytest.fixture
