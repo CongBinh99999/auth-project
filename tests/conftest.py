@@ -15,6 +15,7 @@ from app.config.database import AsyncSessionLocal
 from app.main import app
 from app.models.login_attempt import LoginAttempt
 from app.repositories.user_repository import UserRepository
+from app.services.email_service import EmailService
 
 # httpx cần một base_url hợp lệ; không có request nào ra mạng thật.
 BASE_URL = "http://test"
@@ -27,6 +28,24 @@ async def async_client() -> AsyncGenerator[AsyncClient]:
         transport=ASGITransport(app=app), base_url=BASE_URL
     ) as client:
         yield client
+
+
+@pytest.fixture(autouse=True)
+def stub_smtp(monkeypatch):
+    """Test không bao giờ gửi mail thật.
+
+    Qua ASGITransport, BackgroundTasks chạy ngay trong tiến trình test, nên
+    nếu .env có SMTP thật thì mỗi lần register/resend sẽ gửi mail ra ngoài.
+    Chỉ chặn ở tầng SMTP: phần dựng URL và nội dung mail vẫn được test chạy qua.
+    """
+    sent: list[tuple[str, str]] = []
+
+    def _capture(self, to_email: str, subject: str, html_content: str) -> bool:
+        sent.append((to_email, subject))
+        return True
+
+    monkeypatch.setattr(EmailService, "_send_email", _capture)
+    return sent
 
 
 @pytest.fixture(autouse=True)
