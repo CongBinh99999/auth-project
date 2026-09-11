@@ -1,5 +1,3 @@
-from uuid import UUID
-
 from fastapi import APIRouter, Depends, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
 
@@ -91,7 +89,7 @@ async def logout(
     
     if data.logout_all_devices:
         payload = auth_service.token_service.decode_token(data.access_token)
-        await auth_service.logout_all(user_id=UUID(payload.sub))
+        await auth_service.logout_all(user_id=payload.sub)
 
     return LogoutResponse(
         message="Đăng xuất thành công", 
