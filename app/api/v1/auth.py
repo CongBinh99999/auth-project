@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query, Request, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Query, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
 
 from app.schemas.auth import (
@@ -28,13 +28,15 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 )
 async def register(
     data: RegisterRequest, 
-    auth_service: AuthServiceDep
+    auth_service: AuthServiceDep,
+    background_tasks: BackgroundTasks
 ) -> RegisterResponse: 
     
     user = await auth_service.register(
         email=data.email, 
         full_name=data.full_name,
-        password=data.password
+        password=data.password,
+        background_tasks=background_tasks
     )
 
     return RegisterResponse(
@@ -169,11 +171,12 @@ async def verify_email(
 )
 async def resend_verification(
     data: ResendVerificationRequest,
-    auth_service: AuthServiceDep
+    auth_service: AuthServiceDep,
+    background_tasks: BackgroundTasks
 ) -> ResendVerificationResponse:
     """Gửi lại link xác thực. Trả lời giống nhau dù email có tồn tại hay không."""
 
-    await auth_service.resend_verification(data.email)
+    await auth_service.resend_verification(data.email, background_tasks)
 
     return ResendVerificationResponse(
         message="Nếu email tồn tại và chưa xác thực, link mới đã được gửi",
