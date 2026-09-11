@@ -11,6 +11,7 @@ from fastapi import Depends
 
 from app.models.login_attempt import LoginAttempt
 from app.repositories.login_attempt_repository import (
+    REGISTER_MARKER,
     LoginAttemptRepoDep,
     LoginAttemptRepository,
 )
@@ -41,6 +42,8 @@ class LoginAttemptService:
 
     MAX_ATTEMPTS: int = 5
     MAX_ATTEMPTS_PER_IP: int = 20
+    MAX_REGISTRATIONS_PER_IP: int = 10
+    REGISTRATION_WINDOW_MINUTES: int = 60
     BLOCK_DURATION_MINUTES: int = 15
 
 
@@ -103,6 +106,32 @@ class LoginAttemptService:
             Số lượng records đã xóa.
         """
         return await self.login_attempt_repo.cleanup_old_attempts(days)
+
+
+    async def is_registration_throttled(self, ip_address: str) -> bool:
+        """IP này đã đăng ký quá nhiều tài khoản trong cửa sổ gần đây chưa."""
+        count = await self.login_attempt_repo.count_registrations_by_ip(
+            ip_address, self.REGISTRATION_WINDOW_MINUTES
+        )
+        return count >= self.MAX_REGISTRATIONS_PER_IP
+
+
+    async def record_registration(
+        self,
+        email: str,
+        ip_address: str,
+        user_id: UUID,
+        user_agent: str | None = None
+    ) -> LoginAttempt:
+        """Ghi nhận một lần đăng ký thành công."""
+        return await self.login_attempt_repo.create(
+            email=email,
+            ip_address=ip_address,
+            is_successful=True,
+            user_id=user_id,
+            user_agent=user_agent,
+            failure_reason=REGISTER_MARKER
+        )
 
 
     async def record_attempt(

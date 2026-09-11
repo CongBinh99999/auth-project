@@ -111,3 +111,10 @@ class TooManyLoginAttemptsException(HTTPException):
             detail="Login too many"
         )
 
+
+class TooManyRegistrationsException(HTTPException):
+    def __init__(self):
+        super().__init__(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many registrations from this address",
+        )
