@@ -6,7 +6,11 @@ from uuid import uuid4
 
 import pytest
 
-from app.core.exceptions import InvalidTokenException, TokenExpiredException
+from app.core.exceptions import (
+    EmailSendFailedException,
+    InvalidTokenException,
+    TokenExpiredException,
+)
 from app.core.security import hash_verification_token
 from app.services.auth_service import AuthService
 from app.services.email_verification_service import EmailVerificationService
@@ -50,11 +54,13 @@ class _VerificationService:
 
 
 class _EmailService:
-    def __init__(self):
+    def __init__(self, ok=True):
+        self.ok = ok
         self.sent = []
 
     def send_verification_email(self, to_email, token):
         self.sent.append(to_email)
+        return self.ok
 
 
 def _token(plain: str, *, verified_at=None, expires_in=timedelta(minutes=15)):
@@ -129,3 +135,12 @@ async def test_resend_stays_silent_for_verified_user():
 
     assert verification.calls == []
     assert email.sent == []
+
+
+async def test_resend_raises_when_email_send_fails():
+    """Gửi mail hỏng phải báo lỗi, để get_db rollback và giữ lại token cũ."""
+    verification, email = _VerificationService(), _EmailService(ok=False)
+    user = SimpleNamespace(id=uuid4(), email="d@example.com", is_verified=False)
+
+    with pytest.raises(EmailSendFailedException):
+        await _auth_service(user, verification, email).resend_verification("d@example.com")
