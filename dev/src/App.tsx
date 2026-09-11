@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { call, onRequest, type LogEntry } from "@/lib/api"
+import { call, onRequest, type CallResult, type LogEntry } from "@/lib/api"
 
 type Tokens = { access: string | null; refresh: string | null }
 type TokenResponse = { access_token: string; refresh_token: string }
@@ -66,6 +66,21 @@ export default function App() {
 
   const body = { email, password, confirm_password: password, full_name: "Dev Console" }
 
+  /** Chạy một request và luôn báo kết quả. Không hành động nào được im lặng. */
+  async function run<T>(
+    label: string,
+    fn: () => Promise<CallResult<T>>,
+    describe?: (data: T | null) => string,
+  ) {
+    const res = await fn()
+    if (res.status >= 200 && res.status < 300) {
+      toast.success(describe ? describe(res.data) : `${label}: ${res.status}`)
+    } else {
+      toast.error(`${label}: ${failureText(res.status)}`)
+    }
+    return res
+  }
+
   const register = async () => {
     const res = await call(base, "POST", "/auth/register", { json: body })
     if (res.status === 201) toast.success("Đã đăng ký, kiểm tra email")
@@ -105,12 +120,37 @@ export default function App() {
   }
 
   const logout = async () => {
-    await call(base, "POST", "/auth/logout", {
-      json: { refresh_token: tokens.refresh },
-      bearer: tokens.access,
-    })
-    setTokens({ access: null, refresh: null })
+    const res = await run("Logout", () =>
+      call(base, "POST", "/auth/logout", {
+        json: { refresh_token: tokens.refresh },
+        bearer: tokens.access,
+      }),
+    )
+    if (res.status < 300) setTokens({ access: null, refresh: null })
   }
+
+  const logoutAll = async () => {
+    const res = await run("Logout all", () =>
+      call(base, "POST", "/auth/logout-all", { bearer: tokens.access }),
+    )
+    // Server đã thu hồi mọi family; giữ token trên UI là nói dối trạng thái phiên.
+    if (res.status < 300) setTokens({ access: null, refresh: null })
+  }
+
+  const profile = () =>
+    run(
+      "/users/me",
+      () => call<{ email: string }>(base, "GET", "/users/me", { bearer: tokens.access }),
+      (data) => `Đang đăng nhập: ${data?.email ?? "?"}`,
+    )
+
+  const resend = () =>
+    run("Gửi lại mail", () =>
+      call(base, "POST", "/auth/resend-verification", { json: { email } }),
+    )
+
+  const forgot = () =>
+    run("Quên mật khẩu", () => call(base, "POST", "/auth/forgot-password", { json: { email } }))
 
   return (
     <div className="bg-muted/30 min-h-screen">
@@ -180,7 +220,7 @@ export default function App() {
 
               <div className="grid grid-cols-2 gap-2">
                 <Button onClick={() => void register()}>1. Đăng ký</Button>
-                <Button variant="outline" onClick={() => void call(base, "POST", "/auth/resend-verification", { json: { email } })}>
+                <Button variant="outline" onClick={() => void resend()}>
                   Gửi lại mail
                 </Button>
               </div>
@@ -205,7 +245,7 @@ export default function App() {
               </Button>
 
               <div className="grid grid-cols-2 gap-2">
-                <Button variant="outline" onClick={() => void call(base, "GET", "/users/me", { bearer: tokens.access })}>
+                <Button variant="outline" onClick={() => void profile()}>
                   /users/me
                 </Button>
                 <Button variant="outline" onClick={() => void refresh()}>
@@ -214,7 +254,7 @@ export default function App() {
                 <Button variant="outline" onClick={() => void logout()}>
                   Logout
                 </Button>
-                <Button variant="outline" onClick={() => void call(base, "POST", "/auth/logout-all", { bearer: tokens.access })}>
+                <Button variant="outline" onClick={() => void logoutAll()}>
                   Logout all
                 </Button>
               </div>
@@ -222,7 +262,7 @@ export default function App() {
               <Button
                 variant="ghost"
                 className="w-full"
-                onClick={() => void call(base, "POST", "/auth/forgot-password", { json: { email } })}
+                onClick={() => void forgot()}
               >
                 Quên mật khẩu
               </Button>
