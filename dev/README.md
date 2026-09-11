@@ -23,11 +23,19 @@ sang cổng khác rồi bị CORS chặn.
 
 ## Lấy token xác thực ở đâu
 
-Token chỉ tồn tại trong email — database chỉ lưu hash, đúng thiết kế. Cấu hình
-SMTP trong `.env` rồi dán cả link trong mail vào ô "Token xác thực"; app tự cắt
-phần `?token=`.
+Token chỉ tồn tại trong email — database chỉ lưu hash, đúng thiết kế.
 
-Không có SMTP thì đánh dấu verified thẳng trong database:
+Điền "Hộp thư nhận" bằng địa chỉ thật của bạn. Nút làm mới sẽ sinh email test
+dạng plus-addressing (`ban+dev_xxx@gmail.com`), mọi mail đều về đúng hộp thư đó
+mà mỗi lần đăng ký vẫn là một tài khoản mới. Giá trị này lưu trong localStorage.
+
+Để trống thì email test rơi về `@example.com`. Tên miền đó không có bản ghi MX
+nên Gmail trả lại ngay — chỉ dùng được khi không cần đọc mail, và gửi nhiều thì
+ảnh hưởng uy tín người gửi.
+
+Nhận được mail thì dán cả link vào ô "Token xác thực"; app tự cắt phần `?token=`.
+
+Không cấu hình SMTP thì đánh dấu verified thẳng trong database:
 
 ```sql
 update users set is_verified = true where email = '<email>';

@@ -17,11 +17,24 @@ import { call, onRequest, type LogEntry } from "@/lib/api"
 type Tokens = { access: string | null; refresh: string | null }
 type TokenResponse = { access_token: string; refresh_token: string }
 
-const newEmail = () => `dev_${Date.now().toString(36)}@example.com`
+const INBOX_KEY = "devconsole.inbox"
+
+/** Sinh địa chỉ test.
+ *
+ * Có hộp thư thật thì dùng plus-addressing (ban+dev_xx@gmail.com) để mail về
+ * đúng inbox đó. Không có thì rơi về example.com — tên miền này không có MX
+ * nên Gmail trả lại ngay, chỉ hợp khi không cần đọc mail. */
+function makeEmail(inbox: string) {
+  const tag = `dev_${Date.now().toString(36)}`
+  const at = inbox.indexOf("@")
+  if (at <= 0) return `${tag}@example.com`
+  return `${inbox.slice(0, at)}+${tag}${inbox.slice(at)}`
+}
 
 export default function App() {
   const [base, setBase] = useState("http://localhost:8000")
-  const [email, setEmail] = useState(newEmail)
+  const [inbox, setInbox] = useState(() => localStorage.getItem(INBOX_KEY) ?? "")
+  const [email, setEmail] = useState(() => makeEmail(localStorage.getItem(INBOX_KEY) ?? ""))
   const [password, setPassword] = useState("TestPassword123!")
   const [verifyToken, setVerifyToken] = useState("")
   const [tokens, setTokens] = useState<Tokens>({ access: null, refresh: null })
@@ -29,6 +42,10 @@ export default function App() {
   const [online, setOnline] = useState<boolean | null>(null)
 
   useEffect(() => onRequest((entry) => setLog((prev) => [entry, ...prev].slice(0, 60))), [])
+
+  useEffect(() => {
+    localStorage.setItem(INBOX_KEY, inbox)
+  }, [inbox])
 
   const ping = useCallback(async () => {
     const res = await call(base, "GET", "/health", { quiet: true })
@@ -125,6 +142,16 @@ export default function App() {
               </div>
 
               <div className="space-y-1.5">
+                <Label htmlFor="inbox">Hộp thư nhận</Label>
+                <Input
+                  id="inbox"
+                  placeholder="ban@gmail.com — để trống thì mail sẽ bị trả lại"
+                  value={inbox}
+                  onChange={(e) => setInbox(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-1.5">
                 <Label htmlFor="email">Email test</Label>
                 <div className="flex gap-2">
                   <Input id="email" value={email} onChange={(e) => setEmail(e.target.value)} />
@@ -132,7 +159,7 @@ export default function App() {
                     size="icon"
                     variant="outline"
                     className="shrink-0"
-                    onClick={() => setEmail(newEmail())}
+                    onClick={() => setEmail(makeEmail(inbox))}
                   >
                     <RefreshCw />
                     <span className="sr-only">Email mới</span>
