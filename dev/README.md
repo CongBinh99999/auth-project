@@ -1,29 +1,30 @@
 # Dev console
 
-Trang HTML tĩnh để thử luồng auth bằng tay và chạy các kịch bản bảo mật.
-Không thuộc ứng dụng, không được import ở bất kỳ đâu trong `app/`.
+Ứng dụng React dùng để thử luồng auth bằng tay và chạy các kịch bản bảo mật.
+Chỉ phục vụ việc phát triển — không có gì trong `app/` import từ đây, và CI
+không build thư mục này.
 
 ## Chạy
 
 Hai tiến trình, hai terminal:
 
 ```bash
-uv run uvicorn app.main:app --reload          # API ở :8000
-python3 -m http.server 5173 -d dev            # console ở :5173
+uv run uvicorn app.main:app --reload   # API ở :8000
+cd dev && npm install && npm run dev   # console ở :5173
 ```
 
-Mở http://localhost:5173/console.html
+Mở http://localhost:5173
 
-## Vì sao phải qua cổng 5173
+## Vì sao phải là cổng 5173
 
 `CORS_ORIGINS` chỉ cho `http://localhost:3000` và `http://localhost:5173`.
-Mở file trực tiếp bằng `file://` sẽ gửi `Origin: null` và bị CORS chặn, nên
-phải phục vụ qua HTTP ở đúng một trong hai cổng đó.
+`vite.config.ts` đặt `strictPort: true` để Vite báo lỗi thay vì âm thầm nhảy
+sang cổng khác rồi bị CORS chặn.
 
 ## Lấy token xác thực ở đâu
 
-Token chỉ tồn tại trong email — đúng thiết kế, database chỉ lưu hash. Cấu hình
-SMTP trong `.env` rồi dán link trong mail vào ô "Token xác thực"; trang tự cắt
+Token chỉ tồn tại trong email — database chỉ lưu hash, đúng thiết kế. Cấu hình
+SMTP trong `.env` rồi dán cả link trong mail vào ô "Token xác thực"; app tự cắt
 phần `?token=`.
 
 Không có SMTP thì đánh dấu verified thẳng trong database:
@@ -32,12 +33,22 @@ Không có SMTP thì đánh dấu verified thẳng trong database:
 update users set is_verified = true where email = '<email>';
 ```
 
-## Lưu ý về hạn mức
+## Hạn mức khi chạy kịch bản
 
-Kịch bản "Đăng ký liên tiếp" dùng hết hạn mức 10 đăng ký mỗi 60 phút của IP,
-nên nó đứng cuối danh sách. Chạy nó xong thì các kịch bản khác không tạo được
-tài khoản mới cho tới khi hết cửa sổ. Muốn thử lại ngay:
+Kịch bản "Đăng ký liên tiếp từ cùng IP" dùng hết hạn mức 10 đăng ký mỗi 60 phút,
+nên nó đứng cuối danh sách và "Chạy tất cả" chạy nó sau cùng. Chạy xong thì các
+kịch bản khác không tạo được tài khoản mới cho tới khi hết cửa sổ. Muốn thử lại
+ngay:
 
 ```sql
 delete from login_attempts;
+```
+
+## Cấu trúc
+
+```
+src/lib/api.ts         fetch wrapper, decode JWT, phát sự kiện cho nhật ký
+src/lib/scenarios.ts   6 kịch bản bảo mật, mỗi cái tự khẳng định đúng/sai
+src/components/        token card, nhật ký request, danh sách kịch bản
+src/components/ui/     component shadcn (preset radix-nova)
 ```
