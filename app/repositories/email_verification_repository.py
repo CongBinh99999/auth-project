@@ -3,7 +3,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import Depends
-from sqlalchemy import and_, delete, select
+from sqlalchemy import and_, delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config.database import get_db
@@ -81,6 +81,33 @@ class EmailVerificationRepository:
         )
         
         return result.scalar_one_or_none()
+
+
+    async def mark_verified_if_unused(self, token_hash: str) -> tuple[UUID, datetime] | None:
+        """Đánh dấu token đã dùng, chỉ khi nó còn chưa dùng.
+
+        UPDATE có điều kiện nên hai request song song cùng token chỉ một cái
+        thắng - cái còn lại nhận None.
+
+        Returns:
+            (user_id, expires_at) nếu giành được token, None nếu không.
+        """
+        result = await self.db.execute(
+            update(EmailVerificationToken)
+            .where(
+                and_(
+                    EmailVerificationToken.token_hash == token_hash,
+                    EmailVerificationToken.verified_at.is_(None),
+                )
+            )
+            .values(verified_at=datetime.now(UTC))
+            .returning(
+                EmailVerificationToken.user_id,
+                EmailVerificationToken.expires_at,
+            )
+        )
+
+        return result.one_or_none()
 
 
     async def mark_verified(self, token: EmailVerificationToken) -> EmailVerificationToken:
