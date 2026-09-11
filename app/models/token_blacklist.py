@@ -1,16 +1,17 @@
 
-from datetime import datetime, timezone
-from sqlalchemy import Column, Enum as SAEnum, DateTime
-from typing import Optional, TYPE_CHECKING
-from app.utils.constants import TokenType
-from enum import Enum
 import uuid
-from sqlmodel import SQLModel, Field, Relationship
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING, Optional
+
+from sqlalchemy import Column, DateTime
+from sqlalchemy import Enum as SAEnum
+from sqlmodel import Field, Relationship, SQLModel
+
+from app.utils.constants import TokenType
 
 if TYPE_CHECKING: 
-    from app.models.user import User 
+    from app.models.user import User
 
-from sqlalchemy import DateTime
 
 class TokenBlacklist(SQLModel, table=True):
     __tablename__="token_blacklist"
@@ -31,7 +32,7 @@ class TokenBlacklist(SQLModel, table=True):
     )
     user_id: uuid.UUID = Field(foreign_key="users.id")
     expires_at: datetime = Field(sa_type=DateTime(timezone=True))
-    blacklisted_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), sa_type=DateTime(timezone=True))
+    blacklisted_at: datetime = Field(default_factory=lambda: datetime.now(UTC), sa_type=DateTime(timezone=True))
     reason: Optional[str] = Field(default=None, max_length=100)
 
     #relationship 

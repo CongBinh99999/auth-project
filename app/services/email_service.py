@@ -6,9 +6,10 @@ Service gửi các loại email:
 """
 
 import smtplib
-from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from typing import Annotated
+
 from fastapi import Depends
 
 from app.config.settings import get_settings
@@ -80,8 +81,8 @@ class EmailService:
             print(f"[EMAIL] Sent successfully to: {to_email}")
             return True
             
-        except Exception as e:
-            print(f"[EMAIL] Failed to send to {to_email}: {str(e)}")
+        except (smtplib.SMTPException, OSError) as e:
+            print(f"[EMAIL] Failed to send to {to_email}: {e!s}")
             return False
     
     def send_verification_email(self, to_email: str, token: str, base_url: str = "http://localhost:8000") -> bool:

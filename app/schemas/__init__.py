@@ -1,46 +1,25 @@
-from app.schemas.user import (
-    UserBase,
-    UserCreate,
-    UserUpdate,
-    UserResponse,
-    UserWithRole,
-    PasswordChange,
-)
-
 # Auth schemas
 from app.schemas.auth import (
+    ActiveSessionResponse,
+    AuthErrorResponse,
     LoginRequest,
-    TokenResponse,
+    LogoutRequest,
+    LogoutResponse,
     RefreshTokenRequest,
     RegisterRequest,
     RegisterResponse,
-    TokenPayload,
-    LogoutRequest,
-    LogoutResponse,
-    AuthErrorResponse,
     TokenInfo,
-    ActiveSessionResponse,
-)
-
-# Role schemas
-from app.schemas.role import (
-    RoleBase,
-    RoleCreate,
-    RoleUpdate,
-    RoleResponse,
-    RoleWithPermissions,
-    PermissionBase,
-    PermissionCreate,
-    PermissionResponse,
+    TokenPayload,
+    TokenResponse,
 )
 
 # Device schemas
 from app.schemas.device import (
     DeviceBase,
     DeviceCreate,
-    DeviceUpdate,
-    DeviceResponse,
     DeviceListResponse,
+    DeviceResponse,
+    DeviceUpdate,
 )
 
 # Email Verification schemas
@@ -53,55 +32,75 @@ from app.schemas.email_verification import (
 
 # Password Reset schemas
 from app.schemas.password_reset import (
-    PasswordResetRequest,
-    PasswordResetResponse,
     PasswordResetConfirm,
     PasswordResetConfirmResponse,
+    PasswordResetRequest,
+    PasswordResetResponse,
+)
+
+# Role schemas
+from app.schemas.role import (
+    PermissionBase,
+    PermissionCreate,
+    PermissionResponse,
+    RoleBase,
+    RoleCreate,
+    RoleResponse,
+    RoleUpdate,
+    RoleWithPermissions,
+)
+from app.schemas.user import (
+    PasswordChange,
+    UserBase,
+    UserCreate,
+    UserResponse,
+    UserUpdate,
+    UserWithRole,
 )
 
 __all__ = [
-    # User
-    "UserBase",
-    "UserCreate",
-    "UserUpdate",
-    "UserResponse",
-    "UserWithRole",
-    "PasswordChange",
-    # Auth
-    "LoginRequest",
-    "TokenResponse",
-    "RefreshTokenRequest",
-    "RegisterRequest",
-    "RegisterResponse",
-    "TokenPayload",
-    "LogoutRequest",
-    "LogoutResponse",
-    "AuthErrorResponse",
-    "TokenInfo",
     "ActiveSessionResponse",
-    # Role
-    "RoleBase",
-    "RoleCreate",
-    "RoleUpdate",
-    "RoleResponse",
-    "RoleWithPermissions",
-    "PermissionBase",
-    "PermissionCreate",
-    "PermissionResponse",
+    "AuthErrorResponse",
     # Device
     "DeviceBase",
     "DeviceCreate",
-    "DeviceUpdate",
-    "DeviceResponse",
     "DeviceListResponse",
+    "DeviceResponse",
+    "DeviceUpdate",
     # Email Verification
     "EmailVerifyRequest",
     "EmailVerifyResponse",
-    "ResendVerificationRequest",
-    "ResendVerificationResponse",
+    # Auth
+    "LoginRequest",
+    "LogoutRequest",
+    "LogoutResponse",
+    "PasswordChange",
+    "PasswordResetConfirm",
+    "PasswordResetConfirmResponse",
     # Password Reset
     "PasswordResetRequest",
     "PasswordResetResponse",
-    "PasswordResetConfirm",
-    "PasswordResetConfirmResponse",
+    "PermissionBase",
+    "PermissionCreate",
+    "PermissionResponse",
+    "RefreshTokenRequest",
+    "RegisterRequest",
+    "RegisterResponse",
+    "ResendVerificationRequest",
+    "ResendVerificationResponse",
+    # Role
+    "RoleBase",
+    "RoleCreate",
+    "RoleResponse",
+    "RoleUpdate",
+    "RoleWithPermissions",
+    "TokenInfo",
+    "TokenPayload",
+    "TokenResponse",
+    # User
+    "UserBase",
+    "UserCreate",
+    "UserResponse",
+    "UserUpdate",
+    "UserWithRole",
 ]

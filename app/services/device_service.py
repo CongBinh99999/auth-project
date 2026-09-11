@@ -4,21 +4,20 @@ Quản lý các thiết bị đăng nhập của user bao gồm đăng ký,
 trust/untrust, block và xóa devices.
 """
 
-from uuid import UUID 
+from datetime import UTC, datetime
 from typing import Annotated
+from uuid import UUID
+
 from fastapi import Depends
-from datetime import datetime, timezone
-from app.utils.constants import DeviceStatus
-
-from app.repositories.user_device_repository import (
-    UserDeviceRepoDep, 
-    UserDeviceRepository
-)
-
-from app.models.user_device import UserDevice
-from app.schemas.device import DeviceUpdate
 
 from app.core.exceptions import DeviceNotFoundException
+from app.models.user_device import UserDevice
+from app.repositories.user_device_repository import (
+    UserDeviceRepoDep,
+    UserDeviceRepository,
+)
+from app.schemas.device import DeviceUpdate
+from app.utils.constants import DeviceStatus
 
 
 class DeviceService:
@@ -82,7 +81,7 @@ class DeviceService:
                 os=os,
                 ip_address=ip_address,
                 user_agent=user_agent,
-                last_login_at=datetime.now(timezone.utc)
+                last_login_at=datetime.now(UTC)
             )
         else: 
             updated_data = {
@@ -92,7 +91,7 @@ class DeviceService:
                 "os": os,
                 "ip_address": ip_address,
                 "user_agent": user_agent,
-                "last_login_at": datetime.now(timezone.utc)
+                "last_login_at": datetime.now(UTC)
             }
 
             clean_data = {

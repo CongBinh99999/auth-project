@@ -1,9 +1,10 @@
-from datetime import datetime, timezone
-from typing import List, Annotated, Optional
-from uuid import UUID 
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, delete
+from datetime import UTC, datetime
+from typing import Annotated
+from uuid import UUID
+
 from fastapi import Depends
+from sqlalchemy import and_, delete, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config.database import get_db
 from app.models.user_device import UserDevice
@@ -21,7 +22,7 @@ class UserDeviceRepository:
         self.db = db 
 
     
-    async def get_by_id(self, device_id: UUID) -> Optional[UserDevice]: 
+    async def get_by_id(self, device_id: UUID) -> UserDevice | None: 
         """Lấy device theo ID.
         
         Args:
@@ -55,7 +56,7 @@ class UserDeviceRepository:
         return list(result.scalars().all())
 
 
-    async def get_by_fingerprint(self, user_id: UUID, fingerprint: str) -> Optional[UserDevice]: 
+    async def get_by_fingerprint(self, user_id: UUID, fingerprint: str) -> UserDevice | None: 
         """Lấy device theo fingerprint của user.
         
         Args:
@@ -110,7 +111,7 @@ class UserDeviceRepository:
             if hasattr(device, key): 
                 setattr(device, key, value)
 
-        device.updated_at = datetime.now(timezone.utc)
+        device.updated_at = datetime.now(UTC)
 
         await self.db.flush()
         await self.db.refresh(device)
@@ -127,7 +128,7 @@ class UserDeviceRepository:
         Returns:
             UserDevice đã được cập nhật.
         """
-        device.last_login_at = datetime.now(timezone.utc)
+        device.last_login_at = datetime.now(UTC)
 
         await self.db.flush()
         await self.db.refresh(device)
@@ -200,7 +201,7 @@ class UserDeviceRepository:
         return result.rowcount
     
 
-    async def get_device_by_id(self, device_id: UUID, user_id: UUID) -> Optional[UserDevice]: 
+    async def get_device_by_id(self, device_id: UUID, user_id: UUID) -> UserDevice | None: 
         result = await self.db.execute(
             select(UserDevice)
             .where(

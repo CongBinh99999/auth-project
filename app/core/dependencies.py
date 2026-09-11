@@ -15,15 +15,14 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config.database import get_db
+from app.core.exceptions import (
+    InvalidTokenException,
+    TokenExpiredException,
+    UserNotFoundException,
+)
 from app.models.user import User
 from app.repositories import UserRepoDep
 from app.services.token_service import TokenBlacklistServiceDep
-from app.core.exceptions import (
-    InvalidTokenException, 
-    TokenExpiredException,
-    UserNotFoundException
-)
-
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login") 
 # nếu có sử dụng cho khách tham số "auto_error=False" oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/signin", auto_error=False)
@@ -64,8 +63,8 @@ async def get_current_user(
     """
     try:
         payload = await token_service.verify_token(token)
-    except (InvalidTokenException, TokenExpiredException):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token không hợp lệ hoặc đã hết hạn")
+    except (InvalidTokenException, TokenExpiredException) as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token không hợp lệ hoặc đã hết hạn") from e
 
     user = await user_repo.get_by_id(payload.sub) 
 

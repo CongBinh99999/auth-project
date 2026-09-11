@@ -3,40 +3,28 @@
 Quản lý quy trình đặt lại mật khẩu qua email.
 """
 
-from uuid import UUID
+from datetime import UTC, datetime, timedelta
 from typing import Annotated
+
 from fastapi import Depends
-from datetime import datetime, timedelta, timezone 
-
-from app.repositories.password_reset_repository import(
-    PasswordResetRepository,
-    PasswordResetRepoDep
-)
-
-from app.repositories.user_repository import (
-    UserRepository,
-    UserRepoDep
-)
-
-from app.repositories.token_family_repository import (
-    TokenFamilyRepository,
-    TokenFamilyRepoDep
-)
-
-from app.models.password_reset_token import PasswordResetToken
-
-from app.core.security import (
-    generate_verification_token,
-    hash_verification_token,
-    hash_password
-)
-
-from app.core.exceptions import (
-    TokenExpiredException, 
-    InvalidTokenException
-)
 
 from app.config.settings import get_settings
+from app.core.exceptions import InvalidTokenException
+from app.core.security import (
+    generate_verification_token,
+    hash_password,
+    hash_verification_token,
+)
+from app.models.password_reset_token import PasswordResetToken
+from app.repositories.password_reset_repository import (
+    PasswordResetRepoDep,
+    PasswordResetRepository,
+)
+from app.repositories.token_family_repository import (
+    TokenFamilyRepoDep,
+    TokenFamilyRepository,
+)
+from app.repositories.user_repository import UserRepoDep, UserRepository
 
 setting = get_settings()
 
@@ -99,7 +87,7 @@ class PasswordResetService:
 
         plain_token, hashed_token = generate_verification_token()
 
-        expires_at = datetime.now(timezone.utc) + timedelta(minutes=setting.PASSWORD_RESET_EXPIRE_MINUTES)
+        expires_at = datetime.now(UTC) + timedelta(minutes=setting.PASSWORD_RESET_EXPIRE_MINUTES)
 
         await self.reset_repo.create(
             user_id=user.id, 
@@ -130,7 +118,7 @@ class PasswordResetService:
         if reset_token.used_at is not None: 
             return None  
                
-        if reset_token.expires_at < datetime.now(timezone.utc): 
+        if reset_token.expires_at < datetime.now(UTC): 
             return None     
 
         return reset_token

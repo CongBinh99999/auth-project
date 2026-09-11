@@ -3,32 +3,20 @@
 Quản lý quy trình xác thực email người dùng sau khi đăng ký.
 """
 
-from uuid import UUID
+from datetime import UTC, datetime, timedelta
 from typing import Annotated
+from uuid import UUID
+
 from fastapi import Depends
-from datetime import datetime, timezone, timedelta
-
-from app.repositories.user_repository import (
-    UserRepository, 
-    UserRepoDep
-)
-
-from app.repositories.email_verification_repository import (
-    EmailVerificationRepoDep, 
-    EmailVerificationRepository
-)
-
-from app.core.security import (
-    generate_verification_token,  
-    hash_verification_token
-)
-
-from app.core.exceptions import (
-    InvalidTokenException, 
-    TokenExpiredException
-)
 
 from app.config.settings import get_settings
+from app.core.exceptions import InvalidTokenException, TokenExpiredException
+from app.core.security import generate_verification_token, hash_verification_token
+from app.repositories.email_verification_repository import (
+    EmailVerificationRepoDep,
+    EmailVerificationRepository,
+)
+from app.repositories.user_repository import UserRepoDep, UserRepository
 
 setting = get_settings()
 
@@ -67,7 +55,7 @@ class EmailVerificationService:
             Plain token chỉ được trả về MỘT LẦN để gửi email.
         """
         plain_token, hashed_token = generate_verification_token()
-        expires_at = datetime.now(timezone.utc) + timedelta(minutes=setting.EMAIL_VERIFICATION_EXPIRE_MINUTES)
+        expires_at = datetime.now(UTC) + timedelta(minutes=setting.EMAIL_VERIFICATION_EXPIRE_MINUTES)
         
         
 
@@ -108,7 +96,7 @@ class EmailVerificationService:
         if not verification_token: 
             raise InvalidTokenException()
         
-        if verification_token.expires_at < datetime.now(timezone.utc): 
+        if verification_token.expires_at < datetime.now(UTC): 
             raise TokenExpiredException()
         
         await self.user_repo.verify_by_id(verification_token.user_id)

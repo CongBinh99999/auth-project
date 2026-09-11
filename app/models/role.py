@@ -1,14 +1,17 @@
-from datetime import datetime, timezone
 import uuid
-from typing import TYPE_CHECKING, List, Optional
-from sqlmodel import SQLModel, Field, Relationship
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING, Optional
+
+from sqlmodel import Field, Relationship, SQLModel
+
 from app.models.role_permission import RolePermission
 
 if TYPE_CHECKING: 
-    from app.models.permission import Permission 
+    from app.models.permission import Permission
     from app.models.user import User
 
 from sqlalchemy import DateTime
+
 
 class Role(SQLModel, table=True): 
     __tablename__="roles"
@@ -18,14 +21,14 @@ class Role(SQLModel, table=True):
     description: Optional[str]
     is_default: bool = Field(default=False)
     is_system: bool = Field(default=False)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), sa_type=DateTime(timezone=True))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), sa_type=DateTime(timezone=True))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC), sa_type=DateTime(timezone=True))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC), sa_type=DateTime(timezone=True))
 
-    permissions: List["Permission"] = Relationship(
+    permissions: list["Permission"] = Relationship(
         back_populates="roles",
         link_model=RolePermission,
     )
-    users: List["User"] = Relationship(
+    users: list["User"] = Relationship(
         back_populates="role"
     )
 

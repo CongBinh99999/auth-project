@@ -1,12 +1,12 @@
-from datetime import datetime, timezone
+from typing import Annotated
 from uuid import UUID
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update, delete
-from typing import List, Annotated, Optional
+
 from fastapi import Depends
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config.database import get_db
-from app.models.permission import Permission 
+from app.models.permission import Permission
 
 
 class PermissionRepository: 
@@ -21,7 +21,7 @@ class PermissionRepository:
         self.db = db 
 
 
-    async def get_by_id(self, permission_id: UUID) -> Optional[Permission]: 
+    async def get_by_id(self, permission_id: UUID) -> Permission | None: 
         """Lấy permission theo ID.
         
         Args:
@@ -38,7 +38,7 @@ class PermissionRepository:
         return result.scalar_one_or_none()
 
 
-    async def get_by_code(self, code: str) -> Optional[Permission]: 
+    async def get_by_code(self, code: str) -> Permission | None: 
         """Lấy permission theo code.
         
         Args:

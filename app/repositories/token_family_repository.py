@@ -1,12 +1,13 @@
-from uuid import UUID 
-from typing import List, Optional, Annotated 
-from sqlalchemy import select, update
-from sqlalchemy.ext.asyncio import AsyncSession 
+from datetime import UTC, datetime
+from typing import Annotated
+from uuid import UUID
+
 from fastapi import Depends
-from datetime import datetime, timezone
+from sqlalchemy import select, update
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config.database import get_db
-from app.models.token_family import TokenFamily 
+from app.models.token_family import TokenFamily
 
 
 class TokenFamilyRepository:
@@ -39,7 +40,7 @@ class TokenFamilyRepository:
         return token_family 
 
 
-    async def get_by_id(self, family_id: UUID) -> Optional[TokenFamily]: 
+    async def get_by_id(self, family_id: UUID) -> TokenFamily | None: 
         """Lấy token family theo ID.
         
         Args:
@@ -56,7 +57,7 @@ class TokenFamilyRepository:
         return result.scalar_one_or_none()
 
 
-    async def get_by_jti(self, jti: str) -> Optional[TokenFamily]: 
+    async def get_by_jti(self, jti: str) -> TokenFamily | None: 
         """Lấy token family theo JTI (JWT ID).
         
         Args:
@@ -139,7 +140,7 @@ class TokenFamilyRepository:
         Returns:
             True nếu hợp lệ, False nếu không.
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         return family.expires_at > now and not family.is_revoked 
 
 

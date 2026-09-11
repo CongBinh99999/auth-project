@@ -16,36 +16,43 @@ Services:
 """
 
 from app.services.auth_service import AuthService, AuthServiceDep
-from app.services.user_service import UserService, UserServiceDep
-from app.services.role_service import RoleService, RoleServiceDep
-from app.services.token_service import TokenService, TokenBlacklistServiceDep
-from app.services.token_family_service import TokenFamilyService, TokenFamilyServiceDep
-from app.services.login_attempt_service import LoginAttemptService, LoginAttemptServiceDep
 from app.services.device_service import DeviceService, DeviceServiceDep
-from app.services.email_verification_service import EmailVerificationService, EmailVerificationServiceDep
-from app.services.password_reset_service import PasswordResetService, PasswordResetServiceDep
-
+from app.services.email_verification_service import (
+    EmailVerificationService,
+    EmailVerificationServiceDep,
+)
+from app.services.login_attempt_service import (
+    LoginAttemptService,
+    LoginAttemptServiceDep,
+)
+from app.services.password_reset_service import (
+    PasswordResetService,
+    PasswordResetServiceDep,
+)
+from app.services.role_service import RoleService, RoleServiceDep
+from app.services.token_family_service import TokenFamilyService, TokenFamilyServiceDep
+from app.services.token_service import TokenBlacklistServiceDep, TokenService
+from app.services.user_service import UserService, UserServiceDep
 
 __all__ = [
     # Services
     "AuthService",
-    "UserService", 
-    "RoleService",
-    "TokenService",
-    "TokenFamilyService",
-    "LoginAttemptService",
-    "DeviceService",
-    "EmailVerificationService",
-    "PasswordResetService",
-    
     # Dependency Types
     "AuthServiceDep",
-    "UserServiceDep",
+    "DeviceService",
+    "DeviceServiceDep",
+    "EmailVerificationService",
+    "EmailVerificationServiceDep",
+    "LoginAttemptService",
+    "LoginAttemptServiceDep",
+    "PasswordResetService",
+    "PasswordResetServiceDep",
+    "RoleService",
     "RoleServiceDep",
     "TokenBlacklistServiceDep",
+    "TokenFamilyService",
     "TokenFamilyServiceDep",
-    "LoginAttemptServiceDep",
-    "DeviceServiceDep",
-    "EmailVerificationServiceDep",
-    "PasswordResetServiceDep",
+    "TokenService",
+    "UserService",
+    "UserServiceDep",
 ]

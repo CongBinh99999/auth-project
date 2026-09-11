@@ -7,7 +7,7 @@ Bao gồm:
 - ResendVerificationRequest: Request schema gửi lại email xác thực
 - ResendVerificationResponse: Response schema gửi lại email xác thực
 """
-from pydantic import BaseModel, ConfigDict, Field, EmailStr, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 
 class EmailVerifyRequest(BaseModel):

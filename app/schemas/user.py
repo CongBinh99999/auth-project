@@ -11,9 +11,8 @@ Bao gồm:
 """
 from datetime import datetime
 from uuid import UUID
-from typing import Optional, List
-from pydantic import BaseModel, ConfigDict, Field, EmailStr, field_validator
-from typing_extensions import Self
+
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 from app.schemas.role import RoleResponse
 
@@ -23,7 +22,7 @@ class UserBase(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     
     email: EmailStr = Field(..., description="Địa chỉ email của người dùng")
-    full_name: Optional[str] = Field(None, min_length=1, max_length=255, description="Họ và tên đầy đủ")
+    full_name: str | None = Field(None, min_length=1, max_length=255, description="Họ và tên đầy đủ")
     is_active: bool = Field(default=True, description="Tài khoản có đang hoạt động không?")
 
 
@@ -42,13 +41,13 @@ class UserUpdate(BaseModel):
     """Schema khi cập nhật User - tất cả field Optional."""
     model_config = ConfigDict(from_attributes=True)
     
-    email: Optional[EmailStr] = Field(None, description="Địa chỉ email của người dùng")
-    full_name: Optional[str] = Field(None, min_length=1, max_length=255, description="Họ và tên đầy đủ")
-    is_active: Optional[bool] = Field(None, description="Tài khoản có đang hoạt động không?")
+    email: EmailStr | None = Field(None, description="Địa chỉ email của người dùng")
+    full_name: str | None = Field(None, min_length=1, max_length=255, description="Họ và tên đầy đủ")
+    is_active: bool | None = Field(None, description="Tài khoản có đang hoạt động không?")
     
     @field_validator("email")
     @classmethod
-    def normalize_email(cls, v: Optional[str]) -> Optional[str]:
+    def normalize_email(cls, v: str | None) -> str | None:
         """Chuẩn hóa email nếu có giá trị."""
         if v is not None:
             return v.strip().lower()
@@ -60,12 +59,12 @@ class UserResponse(UserBase):
     id: UUID = Field(..., description="ID của người dùng")
     is_verified: bool = Field(default=False, description="Email đã được xác thực chưa?")
     created_at: datetime = Field(..., description="Thời gian tạo tài khoản")
-    updated_at: Optional[datetime] = Field(None, description="Thời gian cập nhật gần nhất")
+    updated_at: datetime | None = Field(None, description="Thời gian cập nhật gần nhất")
 
 
 class UserWithRole(UserResponse):
     """User kèm thông tin Role."""
-    role: Optional[RoleResponse] = Field(None, description="Vai trò của người dùng")
+    role: RoleResponse | None = Field(None, description="Vai trò của người dùng")
 
 
 class PasswordChange(BaseModel):

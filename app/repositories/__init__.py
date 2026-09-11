@@ -16,96 +16,87 @@ Exports:
     - PasswordResetRepository, PasswordResetRepoDep
 """
 
+from app.repositories.email_verification_repository import (
+    EmailVerificationRepoDep,
+    EmailVerificationRepository,
+    get_email_verification_repository,
+)
+from app.repositories.login_attempt_repository import (
+    LoginAttemptRepoDep,
+    LoginAttemptRepository,
+    get_login_attempt_repository,
+)
+from app.repositories.password_reset_repository import (
+    PasswordResetRepoDep,
+    PasswordResetRepository,
+    get_password_reset_repository,
+)
+from app.repositories.permission_repository import (
+    PermissionRepoDep,
+    PermissionRepository,
+    get_permission_repository,
+)
+from app.repositories.role_repository import (
+    RoleRepoDep,
+    RoleRepository,
+    get_role_repository,
+)
+from app.repositories.token_blacklist_repository import (
+    TokenBlacklistRepoDep,
+    TokenBlacklistRepository,
+    get_token_blacklist_repository,
+)
+from app.repositories.token_family_repository import (
+    TokenFamilyRepoDep,
+    TokenFamilyRepository,
+    get_token_family_repository,
+)
+from app.repositories.user_device_repository import (
+    UserDeviceRepoDep,
+    UserDeviceRepository,
+    get_user_device_repository,
+)
 from app.repositories.user_repository import (
-    UserRepository,
     UserRepoDep,
+    UserRepository,
     get_user_repository,
 )
 
-from app.repositories.role_repository import (
-    RoleRepository,
-    RoleRepoDep,
-    get_role_repository,
-)
-
-from app.repositories.permission_repository import (
-    PermissionRepository,
-    PermissionRepoDep,
-    get_permission_repository,
-)
-
-from app.repositories.user_device_repository import (
-    UserDeviceRepository,
-    UserDeviceRepoDep,
-    get_user_device_repository,
-)
-
-from app.repositories.token_family_repository import (
-    TokenFamilyRepository,
-    TokenFamilyRepoDep,
-    get_token_family_repository,
-)
-
-from app.repositories.token_blacklist_repository import (
-    TokenBlacklistRepository,
-    TokenBlacklistRepoDep,
-    get_token_blacklist_repository,
-)
-
-from app.repositories.login_attempt_repository import (
-    LoginAttemptRepository,
-    LoginAttemptRepoDep,
-    get_login_attempt_repository,
-)
-
-from app.repositories.email_verification_repository import (
-    EmailVerificationRepository,
-    EmailVerificationRepoDep,
-    get_email_verification_repository,
-)
-
-from app.repositories.password_reset_repository import (
-    PasswordResetRepository,
-    PasswordResetRepoDep,
-    get_password_reset_repository,
-)
-
-
 __all__ = [
-    # User
-    "UserRepository",
-    "UserRepoDep",
-    "get_user_repository",
-    # Role
-    "RoleRepository",
-    "RoleRepoDep",
-    "get_role_repository",
-    # Permission
-    "PermissionRepository",
-    "PermissionRepoDep",
-    "get_permission_repository",
-    # UserDevice
-    "UserDeviceRepository",
-    "UserDeviceRepoDep",
-    "get_user_device_repository",
-    # TokenFamily
-    "TokenFamilyRepository",
-    "TokenFamilyRepoDep",
-    "get_token_family_repository",
-    # TokenBlacklist
-    "TokenBlacklistRepository",
-    "TokenBlacklistRepoDep",
-    "get_token_blacklist_repository",
-    # LoginAttempt
-    "LoginAttemptRepository",
-    "LoginAttemptRepoDep",
-    "get_login_attempt_repository",
+    "EmailVerificationRepoDep",
     # EmailVerification
     "EmailVerificationRepository",
-    "EmailVerificationRepoDep",
-    "get_email_verification_repository",
+    "LoginAttemptRepoDep",
+    # LoginAttempt
+    "LoginAttemptRepository",
+    "PasswordResetRepoDep",
     # PasswordReset
     "PasswordResetRepository",
-    "PasswordResetRepoDep",
+    "PermissionRepoDep",
+    # Permission
+    "PermissionRepository",
+    "RoleRepoDep",
+    # Role
+    "RoleRepository",
+    "TokenBlacklistRepoDep",
+    # TokenBlacklist
+    "TokenBlacklistRepository",
+    "TokenFamilyRepoDep",
+    # TokenFamily
+    "TokenFamilyRepository",
+    "UserDeviceRepoDep",
+    # UserDevice
+    "UserDeviceRepository",
+    "UserRepoDep",
+    # User
+    "UserRepository",
+    "get_email_verification_repository",
+    "get_login_attempt_repository",
     "get_password_reset_repository",
+    "get_permission_repository",
+    "get_role_repository",
+    "get_token_blacklist_repository",
+    "get_token_family_repository",
+    "get_user_device_repository",
+    "get_user_repository",
 ]

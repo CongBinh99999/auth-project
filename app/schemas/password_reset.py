@@ -7,7 +7,7 @@ Bao gồm:
 - PasswordResetConfirm: Request schema xác nhận đặt lại mật khẩu
 - PasswordResetConfirmResponse: Response schema xác nhận đặt lại mật khẩu
 """
-from pydantic import BaseModel, Field, ConfigDict, EmailStr, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 
 class PasswordResetRequest(BaseModel):
