@@ -26,7 +26,9 @@ class LoginAttemptService:
     - Xóa attempts sau khi login thành công
     
     Constants:
-        MAX_ATTEMPTS: Số lần thất bại tối đa trước khi bị block (default: 5).
+        MAX_ATTEMPTS: Số lần thất bại tối đa cho MỘT email (default: 5).
+        MAX_ATTEMPTS_PER_IP: Ngưỡng rộng hơn cho một IP, tránh khoá oan
+            nhiều user ngồi sau cùng NAT (default: 20).
         BLOCK_DURATION_MINUTES: Thời gian block (default: 15 phút).
         
     Attributes:
@@ -38,6 +40,7 @@ class LoginAttemptService:
     
 
     MAX_ATTEMPTS: int = 5
+    MAX_ATTEMPTS_PER_IP: int = 20
     BLOCK_DURATION_MINUTES: int = 15
 
 
@@ -52,9 +55,10 @@ class LoginAttemptService:
             True nếu bị block (vượt quá MAX_ATTEMPTS).
         """
         return await self.login_attempt_repo.is_blocked(
-            email, 
-            ip_address, 
-            max_attempts=self.MAX_ATTEMPTS
+            email,
+            ip_address,
+            max_per_email=self.MAX_ATTEMPTS,
+            max_per_ip=self.MAX_ATTEMPTS_PER_IP
         )
 
 

@@ -249,16 +249,22 @@ class AuthService:
             await self.login_attempt_service.record_attempt(
                 email, ip_address, False, None, user_agent, "invalid_credentials"
             )
+            # get_db rollback toàn bộ transaction khi request raise, nên lần thất
+            # bại phải commit ngay tại đây. Không có dòng này thì login_attempts
+            # luôn rỗng và MAX_ATTEMPTS không bao giờ chặn được ai.
+            await self.user_repo.db.commit()
             raise
         except UserInactiveException:
             await self.login_attempt_service.record_attempt(
                 email, ip_address, False, None, user_agent, "user_inactive"
             )
+            await self.user_repo.db.commit()
             raise
         except UserNotVerifiedException:
             await self.login_attempt_service.record_attempt(
                 email, ip_address, False, None, user_agent, "user_not_verified"
             )
+            await self.user_repo.db.commit()
             raise
 
         await self.login_attempt_service.record_attempt(
