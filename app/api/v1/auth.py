@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, Depends, Query, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
 
 from app.schemas.auth import (
@@ -124,6 +124,25 @@ async def logout_all(
     )
 
 
+@router.get(
+    "/verify-email",
+    response_model=EmailVerifyResponse,
+    summary="Xác thực email"
+)
+async def verify_email_link(
+    verification_service: EmailVerificationServiceDep,
+    token: str = Query(..., min_length=1, description="Token xác thực email")
+) -> EmailVerifyResponse:
+    """Xác thực email qua link trong mail (email_service gửi đúng URL này)."""
+
+    await verification_service.verify_email(token)
+
+    return EmailVerifyResponse(
+        message="Xác thực email thành công",
+        verified=True
+    )
+
+
 @router.post(
     "/verify-email",
     response_model=EmailVerifyResponse,
@@ -133,7 +152,7 @@ async def verify_email(
     data: EmailVerifyRequest,
     verification_service: EmailVerificationServiceDep
 ) -> EmailVerifyResponse:
-    """Xác thực email bằng token gửi qua mail."""
+    """Xác thực email bằng token, cho client tự gọi API."""
 
     await verification_service.verify_email(data.token)
 
