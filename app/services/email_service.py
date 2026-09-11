@@ -36,6 +36,7 @@ class EmailService:
         self.smtp_port = settings.SMTP_PORT
         self.username = settings.SMTP_USERNAME
         self.password = settings.SMTP_PASSWORD
+        self.timeout = settings.SMTP_TIMEOUT
     
     def _create_message(
         self, 
@@ -73,7 +74,7 @@ class EmailService:
         try:
             message = self._create_message(to_email, subject, html_content)
             
-            with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
+            with smtplib.SMTP(self.smtp_server, self.smtp_port, timeout=self.timeout) as server:
                 server.starttls()
                 server.login(self.username, self.password)
                 server.sendmail(self.username, to_email, message.as_string())
