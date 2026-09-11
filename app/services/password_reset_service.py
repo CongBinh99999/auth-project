@@ -82,7 +82,14 @@ class PasswordResetService:
 
         if not user: 
             return None 
-        
+
+        pending = await self.reset_repo.get_pending_by_user(user.id)
+        cooldown = timedelta(seconds=setting.PASSWORD_RESET_COOLDOWN_SECONDS)
+
+        if pending and pending.created_at > datetime.now(UTC) - cooldown:
+            # Chặn mail-bomb: link hiện tại vẫn còn dùng được.
+            return None
+
         await self.reset_repo.delete_by_user(user.id)
 
         plain_token, hashed_token = generate_verification_token()
@@ -145,21 +152,26 @@ class PasswordResetService:
         Raises:
             InvalidTokenException: Token không hợp lệ hoặc đã sử dụng.
         """
-        reset_token = await self.validate_token(token)
-        if reset_token is None: 
+        hashed_token = hash_verification_token(token)
+        claimed = await self.reset_repo.mark_used_if_unused(hashed_token)
+
+        if claimed is None:
+            # Không tồn tại, hoặc request khác đã dùng token này trước.
             raise InvalidTokenException()
-        
-        user = await self.user_repo.get_by_id(reset_token.user_id)
+
+        user_id, expires_at = claimed
+
+        if expires_at < datetime.now(UTC):
+            # raise -> get_db rollback -> token chưa bị tiêu mất.
+            raise InvalidTokenException()
+
+        user = await self.user_repo.get_by_id(user_id)
         if not user:
             raise InvalidTokenException()
-        
-        hashed_password = hash_password(new_password)
 
-        await self.user_repo.update_password(user, hashed_password)
+        await self.user_repo.update_password(user, hash_password(new_password))
 
-        await self.reset_repo.mark_used(reset_token)
-
-        await self.family_repo.revoke_all_for_user(reset_token.user_id)
+        await self.family_repo.revoke_all_for_user(user_id)
 
         return True
 

@@ -31,6 +31,7 @@ class Settings(BaseSettings):
     SMTP_TIMEOUT: int = 10
 
     RESEND_VERIFICATION_COOLDOWN_SECONDS: int = 60
+    PASSWORD_RESET_COOLDOWN_SECONDS: int = 60
 
     CORS_ORIGINS: list[str] = ["http://localhost:3000","http://localhost:5173"]
 
