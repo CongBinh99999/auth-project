@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, Depends, Query, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
 
 from app.schemas.auth import (
@@ -9,7 +9,14 @@ from app.schemas.auth import (
     RegisterResponse,
     TokenResponse,
 )
+from app.schemas.email_verification import (
+    EmailVerifyRequest,
+    EmailVerifyResponse,
+    ResendVerificationRequest,
+    ResendVerificationResponse,
+)
 from app.services.auth_service import AuthServiceDep
+from app.services.email_verification_service import EmailVerificationServiceDep
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -113,5 +120,62 @@ async def logout_all(
 
     return LogoutResponse(
         message=f"Đã đăng xuất khỏi {count} thiết bị",
+        success=True
+    )
+
+
+@router.get(
+    "/verify-email",
+    response_model=EmailVerifyResponse,
+    summary="Xác thực email"
+)
+async def verify_email_link(
+    verification_service: EmailVerificationServiceDep,
+    token: str = Query(..., min_length=1, description="Token xác thực email")
+) -> EmailVerifyResponse:
+    """Xác thực email qua link trong mail (email_service gửi đúng URL này)."""
+
+    await verification_service.verify_email(token)
+
+    return EmailVerifyResponse(
+        message="Xác thực email thành công",
+        verified=True
+    )
+
+
+@router.post(
+    "/verify-email",
+    response_model=EmailVerifyResponse,
+    summary="Xác thực email"
+)
+async def verify_email(
+    data: EmailVerifyRequest,
+    verification_service: EmailVerificationServiceDep
+) -> EmailVerifyResponse:
+    """Xác thực email bằng token, cho client tự gọi API."""
+
+    await verification_service.verify_email(data.token)
+
+    return EmailVerifyResponse(
+        message="Xác thực email thành công",
+        verified=True
+    )
+
+
+@router.post(
+    "/resend-verification",
+    response_model=ResendVerificationResponse,
+    summary="Gửi lại email xác thực"
+)
+async def resend_verification(
+    data: ResendVerificationRequest,
+    auth_service: AuthServiceDep
+) -> ResendVerificationResponse:
+    """Gửi lại link xác thực. Trả lời giống nhau dù email có tồn tại hay không."""
+
+    await auth_service.resend_verification(data.email)
+
+    return ResendVerificationResponse(
+        message="Nếu email tồn tại và chưa xác thực, link mới đã được gửi",
         success=True
     )

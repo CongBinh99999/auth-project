@@ -12,6 +12,7 @@ from fastapi import Depends
 
 from app.core.exceptions import (
     EmailExistsException,
+    EmailSendFailedException,
     InvalidCredentialsException,
     RoleNotFoundException,
     TooManyLoginAttemptsException,
@@ -139,6 +140,24 @@ class AuthService:
         )
 
         return UserResponse.model_validate(new_user)
+
+
+    async def resend_verification(self, email: str) -> None:
+        """Gửi lại email xác thực.
+
+        Im lặng khi email không tồn tại hoặc đã xác thực, để route không
+        tiết lộ email nào có trong hệ thống.
+        """
+        user = await self.user_repo.get_by_email(email)
+        if not user or user.is_verified:
+            return
+
+        token = await self.email_verification_service.resend_email(user.id)
+
+        if not self.email_service.send_verification_email(to_email=user.email, token=token):
+            # resend_email đã xoá token cũ; raise để get_db rollback, giữ lại link cũ
+            # thay vì khoá user ra ngoài vĩnh viễn.
+            raise EmailSendFailedException()
 
 
     async def authenticate_user(self, email: str, password: str) -> User:

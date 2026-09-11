@@ -95,7 +95,10 @@ class EmailVerificationService:
 
         if not verification_token: 
             raise InvalidTokenException()
-        
+
+        if verification_token.verified_at is not None:
+            raise InvalidTokenException()
+
         if verification_token.expires_at < datetime.now(UTC): 
             raise TokenExpiredException()
         
