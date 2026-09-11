@@ -117,19 +117,50 @@ class LoginAttemptRepository:
         return result.scalar() or 0
 
 
-    async def is_blocked(self, email: str, ip_address: str, max_attempts: int = 5) -> bool: 
+    async def count_failed_by_email(self, email: str, minutes: int = 15) -> int:
+        """Đếm login thất bại gần đây của riêng một email."""
+        return await self._count_failed(LoginAttempt.email == email, minutes)
+
+
+    async def count_failed_by_ip(self, ip_address: str, minutes: int = 15) -> int:
+        """Đếm login thất bại gần đây từ riêng một IP."""
+        return await self._count_failed(LoginAttempt.ip_address == ip_address, minutes)
+
+
+    async def _count_failed(self, criterion, minutes: int) -> int:
+        cutoff = datetime.now(UTC) - timedelta(minutes=minutes)
+        result = await self.db.execute(
+            select(func.count())
+            .select_from(LoginAttempt)
+            .where(
+                and_(
+                    criterion,
+                    LoginAttempt.attempted_at >= cutoff,
+                    LoginAttempt.is_successful.is_(False)
+                )
+            )
+        )
+
+        return result.scalar() or 0
+
+
+    async def is_blocked(
+        self,
+        email: str,
+        ip_address: str,
+        max_per_email: int = 5,
+        max_per_ip: int = 20
+    ) -> bool:
         """Kiểm tra email/IP có bị block không.
-        
-        Args:
-            email: Email cần kiểm tra.
-            ip_address: IP address cần kiểm tra.
-            max_attempts: Số lần thất bại tối đa (default: 5).
-            
-        Returns:
-            True nếu bị block, False nếu không.
+
+        Email và IP dùng ngưỡng RIÊNG. Gộp chung bằng OR ở một ngưỡng sẽ khiến
+        năm lần gõ sai của một người khoá mọi tài khoản cùng đi qua một NAT,
+        và sau reverse proxy thì khoá toàn bộ ứng dụng.
         """
-        failed_count = await self.count_failed_attempts(email, ip_address)
-        return failed_count >= max_attempts
+        if await self.count_failed_by_email(email) >= max_per_email:
+            return True
+
+        return await self.count_failed_by_ip(ip_address) >= max_per_ip
 
 
     async def cleanup_old_attempts(self, days: int = 30) -> int: 
@@ -151,7 +182,10 @@ class LoginAttemptRepository:
 
 
     async def clear_failed_attempts(self, email: str, ip_address: str, minutes: int = 15) -> int:
-        """Xóa các failed attempts gần đây sau khi login thành công.
+        """Xóa failed attempts gần đây của email này sau khi login thành công.
+
+        Chỉ xoá theo email: nếu xoá cả theo IP thì một tài khoản hợp lệ có thể
+        reset bộ đếm IP và vô hiệu hoá ngưỡng IP.
         
         Args:
             email: Email của user.
@@ -166,12 +200,9 @@ class LoginAttemptRepository:
             delete(LoginAttempt)
             .where(
                 and_(
-                    or_(
-                        LoginAttempt.email == email,
-                        LoginAttempt.ip_address == ip_address
-                    ),
+                    LoginAttempt.email == email,
                     LoginAttempt.attempted_at >= cutoff,
-                    LoginAttempt.is_successful == False
+                    LoginAttempt.is_successful.is_(False)
                 )
             )
         )
