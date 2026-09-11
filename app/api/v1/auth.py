@@ -40,14 +40,17 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 async def register(
     data: RegisterRequest, 
     auth_service: AuthServiceDep,
-    background_tasks: BackgroundTasks
+    background_tasks: BackgroundTasks,
+    request: Request
 ) -> RegisterResponse: 
     
     user = await auth_service.register(
         email=data.email, 
         full_name=data.full_name,
         password=data.password,
-        background_tasks=background_tasks
+        background_tasks=background_tasks,
+        ip_address=request.client.host if request.client else "unknow",
+        user_agent=request.headers.get("user-agent")
     )
 
     return RegisterResponse(
