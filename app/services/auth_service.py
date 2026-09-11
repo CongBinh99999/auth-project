@@ -35,6 +35,10 @@ from app.services.login_attempt_service import (
     LoginAttemptService,
     LoginAttemptServiceDep,
 )
+from app.services.password_reset_service import (
+    PasswordResetService,
+    PasswordResetServiceDep,
+)
 from app.services.token_family_service import TokenFamilyService, TokenFamilyServiceDep
 from app.services.token_service import TokenBlacklistServiceDep, TokenService
 
@@ -71,8 +75,10 @@ class AuthService:
         login_attempt_service: LoginAttemptService,
         email_verification_service: EmailVerificationService,
         email_service: EmailService,
-        device_service: DeviceService | None = None
+        device_service: DeviceService | None = None,
+        password_reset_service: PasswordResetService | None = None
     ): 
+        self.password_reset_service = password_reset_service
         self.user_repo = user_repo
         self.role_repo = role_repo
         self.token_service = token_service
@@ -167,6 +173,26 @@ class AuthService:
         background_tasks.add_task(
             self.email_service.send_verification_email,
             to_email=user.email,
+            token=token
+        )
+
+
+    async def request_password_reset(self, email: str, background_tasks: BackgroundTasks) -> None:
+        """Gửi email đặt lại mật khẩu.
+
+        Im lặng khi email không tồn tại hoặc còn trong cooldown, để route không
+        tiết lộ email nào có trong hệ thống.
+        """
+        token = await self.password_reset_service.request_reset(email)
+        if token is None:
+            return
+
+        # Xem ghi chú ở register(): phải commit trước khi lên lịch gửi mail.
+        await self.user_repo.db.commit()
+
+        background_tasks.add_task(
+            self.email_service.send_password_reset_email,
+            to_email=email,
             token=token
         )
 
@@ -334,7 +360,8 @@ def get_auth_service(
     login_attempt_service: LoginAttemptServiceDep,
     email_verification_service: EmailVerificationServiceDep,
     email_service: EmailServiceDep,
-    device_service: DeviceServiceDep
+    device_service: DeviceServiceDep,
+    password_reset_service: PasswordResetServiceDep
 ) -> AuthService:
     """Dependency injection factory cho AuthService."""
     return AuthService(
@@ -345,7 +372,8 @@ def get_auth_service(
         login_attempt_service,
         email_verification_service,
         email_service,
-        device_service
+        device_service,
+        password_reset_service
     )
 
 

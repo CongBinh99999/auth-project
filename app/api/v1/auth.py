@@ -15,8 +15,15 @@ from app.schemas.email_verification import (
     ResendVerificationRequest,
     ResendVerificationResponse,
 )
+from app.schemas.password_reset import (
+    PasswordResetConfirm,
+    PasswordResetConfirmResponse,
+    PasswordResetRequest,
+    PasswordResetResponse,
+)
 from app.services.auth_service import AuthServiceDep
 from app.services.email_verification_service import EmailVerificationServiceDep
+from app.services.password_reset_service import PasswordResetServiceDep
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -180,5 +187,44 @@ async def resend_verification(
 
     return ResendVerificationResponse(
         message="Nếu email tồn tại và chưa xác thực, link mới đã được gửi",
+        success=True
+    )
+
+
+@router.post(
+    "/forgot-password",
+    response_model=PasswordResetResponse,
+    summary="Yêu cầu đặt lại mật khẩu"
+)
+async def forgot_password(
+    data: PasswordResetRequest,
+    auth_service: AuthServiceDep,
+    background_tasks: BackgroundTasks
+) -> PasswordResetResponse:
+    """Gửi link đặt lại mật khẩu. Trả lời giống nhau dù email có tồn tại hay không."""
+
+    await auth_service.request_password_reset(data.email, background_tasks)
+
+    return PasswordResetResponse(
+        message="Nếu email tồn tại, link đặt lại mật khẩu đã được gửi",
+        success=True
+    )
+
+
+@router.post(
+    "/reset-password",
+    response_model=PasswordResetConfirmResponse,
+    summary="Đặt lại mật khẩu"
+)
+async def reset_password(
+    data: PasswordResetConfirm,
+    reset_service: PasswordResetServiceDep
+) -> PasswordResetConfirmResponse:
+    """Đặt mật khẩu mới bằng token từ email, đồng thời thu hồi mọi session cũ."""
+
+    await reset_service.reset_password(data.token, data.new_password)
+
+    return PasswordResetConfirmResponse(
+        message="Đặt lại mật khẩu thành công",
         success=True
     )

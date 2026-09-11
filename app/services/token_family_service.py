@@ -108,6 +108,11 @@ class TokenFamilyService:
 
         if not family: 
             raise InvalidTokenException()
+
+        if not await self.token_family_repo.is_valid_family(family):
+            # Family đã bị thu hồi (đổi mật khẩu, logout-all, phát hiện token theft)
+            # hoặc đã hết hạn.
+            raise TokenRevokedException()
         
         # Token theft detection
         if family.current_jti != str(payload.jti):
