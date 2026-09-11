@@ -31,6 +31,12 @@ function makeEmail(inbox: string) {
   return `${inbox.slice(0, at)}+${tag}${inbox.slice(at)}`
 }
 
+/** status 0 nghĩa là fetch không tới được server, không phải mã HTTP. */
+function failureText(status: number) {
+  if (status === 0) return "Không gọi được API — kiểm tra uvicorn còn chạy không"
+  return `Thất bại (${status})`
+}
+
 export default function App() {
   const [base, setBase] = useState("http://localhost:8000")
   const [inbox, setInbox] = useState(() => localStorage.getItem(INBOX_KEY) ?? "")
@@ -62,9 +68,8 @@ export default function App() {
 
   const register = async () => {
     const res = await call(base, "POST", "/auth/register", { json: body })
-    toast[res.status === 201 ? "success" : "error"](
-      res.status === 201 ? "Đã đăng ký, kiểm tra email" : `Đăng ký thất bại (${res.status})`,
-    )
+    if (res.status === 201) toast.success("Đã đăng ký, kiểm tra email")
+    else toast.error(`Đăng ký: ${failureText(res.status)}`)
   }
 
   const login = async () => {
@@ -75,7 +80,7 @@ export default function App() {
       setTokens({ access: res.data.access_token, refresh: res.data.refresh_token })
       toast.success("Đăng nhập thành công")
     } else {
-      toast.error(`Đăng nhập thất bại (${res.status})`)
+      toast.error(`Đăng nhập: ${failureText(res.status)}`)
     }
   }
 
@@ -87,7 +92,7 @@ export default function App() {
       setTokens({ access: res.data.access_token, refresh: res.data.refresh_token })
       toast.success("Đã xoay token")
     } else {
-      toast.error(`Refresh thất bại (${res.status})`)
+      toast.error(`Refresh: ${failureText(res.status)}`)
     }
   }
 
@@ -95,9 +100,8 @@ export default function App() {
     const raw = verifyToken.trim()
     const token = raw.includes("token=") ? raw.split("token=")[1].split("&")[0] : raw
     const res = await call(base, "GET", `/auth/verify-email?token=${encodeURIComponent(token)}`)
-    toast[res.status === 200 ? "success" : "error"](
-      res.status === 200 ? "Email đã xác thực" : `Xác thực thất bại (${res.status})`,
-    )
+    if (res.status === 200) toast.success("Email đã xác thực")
+    else toast.error(`Xác thực: ${failureText(res.status)}`)
   }
 
   const logout = async () => {
