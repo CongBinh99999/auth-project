@@ -25,6 +25,7 @@ from app.repositories.token_family_repository import (
     TokenFamilyRepository,
 )
 from app.schemas.auth import TokenPayload
+from app.utils.constants import TokenType
 
 setting = get_settings()
 
@@ -93,7 +94,7 @@ class TokenFamilyService:
             TokenRevokedException: Phát hiện token theft, đã revoke toàn bộ sessions.
         """
         try:
-            payload = decode_token(refresh_token)
+            payload = decode_token(refresh_token, expected_type=TokenType.REFRESH)
         except (JWTError, ValidationError) as e:
             raise InvalidTokenException() from e
         

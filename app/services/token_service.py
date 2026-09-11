@@ -14,8 +14,6 @@ from pydantic import ValidationError
 from app.config.settings import get_settings
 from app.core.exceptions import InvalidTokenException, TokenExpiredException
 from app.core.security import (
-    create_access_token,
-    create_refresh_token,
     create_token,
     decode_token,
 )
@@ -43,42 +41,6 @@ class TokenService:
 
     def __init__(self, blacklist_repo: TokenBlacklistRepository):
         self.blacklist_repo = blacklist_repo
-
-
-    def create_access_token(self, user_id: UUID, family_id: UUID | None = None) -> tuple[str, str, datetime]:
-        """Tạo access token mới.
-        
-        Args:
-            user_id: UUID của user.
-            family_id: UUID của token family (optional).
-            
-        Returns:
-            Tuple (token_string, jti, expires_at).
-        """
-        extra_claims = {"family_id": family_id} if family_id is not None else None
-
-        return create_access_token(
-            subject=str(user_id), 
-            extra_claims=extra_claims
-        )
-
-
-    def create_refresh_token(self, user_id: UUID, family_id: UUID) -> tuple[str, str, datetime]:
-        """Tạo refresh token mới.
-        
-        Args:
-            user_id: UUID của user.
-            family_id: UUID của token family (bắt buộc).
-            
-        Returns:
-            Tuple (token_string, jti, expires_at).
-        """
-        extra_claims = {"family_id": family_id}
-
-        return create_refresh_token(
-            subject=str(user_id),
-            extra_claims=extra_claims
-        )
 
 
     def create_pair_token(
@@ -110,7 +72,7 @@ class TokenService:
         )
 
 
-    def decode_token(self, token: str) -> TokenPayload:
+    def decode_token(self, token: str, expected_type: str | None = None) -> TokenPayload:
         """Decode JWT token thành payload.
         
         Args:
@@ -123,7 +85,7 @@ class TokenService:
             InvalidTokenException: Token không hợp lệ hoặc không decode được.
         """
         try:
-            return decode_token(token)
+            return decode_token(token, expected_type=expected_type)
         except (JWTError, ValidationError) as e:
             raise InvalidTokenException() from e
 
@@ -141,7 +103,7 @@ class TokenService:
             InvalidTokenException: Token không hợp lệ hoặc bị blacklist.
             TokenExpiredException: Token đã hết hạn.
         """
-        payload = self.decode_token(token)
+        payload = self.decode_token(token, expected_type=TokenType.ACCESS)
 
         if payload.is_expired: 
             raise TokenExpiredException()
