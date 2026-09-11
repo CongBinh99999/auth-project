@@ -1,12 +1,10 @@
-from uuid import UUID 
+from uuid import UUID
+
 from fastapi import APIRouter, status
 
 from app.core.dependencies import RequireAdmin
+from app.schemas.role import PermissionResponse, RoleCreate, RoleResponse, RoleUpdate
 from app.services.role_service import RoleServiceDep
-from app.schemas.role import (
-    RoleResponse, RoleCreate, RoleUpdate,
-    PermissionResponse
-)
 
 router = APIRouter(
     prefix="/roles",

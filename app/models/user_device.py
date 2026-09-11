@@ -1,14 +1,16 @@
 import uuid
-from sqlmodel import SQLModel, Field, Relationship
-from typing import Optional, TYPE_CHECKING, List
-from datetime import datetime, timezone
-from sqlalchemy import DateTime, Enum as SAEnum, Column
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING, Optional
+
+from sqlalchemy import Column, DateTime
+from sqlalchemy import Enum as SAEnum
+from sqlmodel import Field, Relationship, SQLModel
 
 from app.utils.constants import DeviceStatus
 
 if TYPE_CHECKING:
-    from app.models.user import User
     from app.models.token_family import TokenFamily
+    from app.models.user import User
 
 
 class UserDevice(SQLModel, table=True):
@@ -40,18 +42,18 @@ class UserDevice(SQLModel, table=True):
     
     is_trusted: bool = Field(default=False)
     created_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc), 
+        default_factory=lambda: datetime.now(UTC), 
         sa_type=DateTime(timezone=True)
     )
     updated_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc), 
+        default_factory=lambda: datetime.now(UTC), 
         sa_type=DateTime(timezone=True)
     )
     last_login_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc), 
+        default_factory=lambda: datetime.now(UTC), 
         sa_type=DateTime(timezone=True)
     )
 
     # Relationships
     user: Optional["User"] = Relationship(back_populates="devices")
-    token_families: List["TokenFamily"] = Relationship(back_populates="device")
+    token_families: list["TokenFamily"] = Relationship(back_populates="device")

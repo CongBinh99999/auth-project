@@ -8,10 +8,10 @@ Bao gồm:
 - DeviceResponse: Schema trả về cho client
 - DeviceListResponse: Schema danh sách devices
 """
-from typing import Optional
-from pydantic import BaseModel, ConfigDict, Field
-from uuid import UUID
 from datetime import datetime
+from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.utils.constants import DeviceStatus
 
@@ -20,24 +20,24 @@ class DeviceBase(BaseModel):
     """Base schema cho Device - chứa các field chung."""
     model_config = ConfigDict(from_attributes=True)
     
-    device_name: Optional[str] = Field(None, max_length=255, description="Tên thiết bị")
-    device_type: Optional[str] = Field(None, max_length=255, description="Loại thiết bị (desktop, mobile, tablet)")
-    browser: Optional[str] = Field(None, max_length=100, description="Trình duyệt")
-    os: Optional[str] = Field(None, max_length=100, description="Hệ điều hành")
+    device_name: str | None = Field(None, max_length=255, description="Tên thiết bị")
+    device_type: str | None = Field(None, max_length=255, description="Loại thiết bị (desktop, mobile, tablet)")
+    browser: str | None = Field(None, max_length=100, description="Trình duyệt")
+    os: str | None = Field(None, max_length=100, description="Hệ điều hành")
 
 
 class DeviceCreate(DeviceBase):
     """Schema khi tạo Device mới."""
-    ip_address: Optional[str] = Field(None, max_length=45, description="Địa chỉ IP")
-    user_agent: Optional[str] = Field(None, description="User Agent của trình duyệt")
-    fingerprint: Optional[str] = Field(None, description="Dấu vân tay thiết bị (device fingerprint)")
+    ip_address: str | None = Field(None, max_length=45, description="Địa chỉ IP")
+    user_agent: str | None = Field(None, description="User Agent của trình duyệt")
+    fingerprint: str | None = Field(None, description="Dấu vân tay thiết bị (device fingerprint)")
 
 
 class DeviceUpdate(BaseModel): 
     """Schema khi cập nhật thông tin Device."""
     model_config = ConfigDict(from_attributes=True)
     
-    device_name: Optional[str] = Field(None, max_length=255, description="Tên thiết bị")
+    device_name: str | None = Field(None, max_length=255, description="Tên thiết bị")
     is_trusted: bool = Field(default=False, description="Đánh dấu thiết bị đáng tin cậy")
 
 

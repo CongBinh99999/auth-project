@@ -1,9 +1,10 @@
+from datetime import UTC, datetime
+from typing import Annotated
 from uuid import UUID
-from typing import Optional, Annotated 
-from datetime import datetime, timezone 
-from sqlalchemy import select, delete, and_
-from sqlalchemy.ext.asyncio import AsyncSession 
+
 from fastapi import Depends
+from sqlalchemy import and_, delete, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config.database import get_db
 from app.models.email_verification_token import EmailVerificationToken
@@ -39,7 +40,7 @@ class EmailVerificationRepository:
         return email_verification
     
 
-    async def get_by_token_hash(self, token_hash: str) -> Optional[EmailVerificationToken]:
+    async def get_by_token_hash(self, token_hash: str) -> EmailVerificationToken | None:
         """Lấy token theo hash.
         
         Args:
@@ -56,7 +57,7 @@ class EmailVerificationRepository:
         return result.scalar_one_or_none()
     
 
-    async def get_pending_by_user(self, user_id: UUID) -> Optional[EmailVerificationToken]:
+    async def get_pending_by_user(self, user_id: UUID) -> EmailVerificationToken | None:
         """Lấy token pending của user (chưa verify, chưa hết hạn).
         
         Args:
@@ -65,7 +66,7 @@ class EmailVerificationRepository:
         Returns:
             EmailVerificationToken nếu tìm thấy, None nếu không.
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         result = await self.db.execute(
             select(EmailVerificationToken)
@@ -91,7 +92,7 @@ class EmailVerificationRepository:
         Returns:
             EmailVerificationToken đã được cập nhật.
         """
-        token.verified_at = datetime.now(timezone.utc)
+        token.verified_at = datetime.now(UTC)
 
         await self.db.flush()
         await self.db.refresh(token)
@@ -122,7 +123,7 @@ class EmailVerificationRepository:
         Returns:
             Số lượng tokens đã xóa.
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         result = await self.db.execute(
             delete(EmailVerificationToken)

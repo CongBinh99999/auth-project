@@ -6,10 +6,10 @@ Bao gồm:
 - RoleWithPermissions: Role kèm danh sách permissions
 - PermissionBase, PermissionCreate, PermissionResponse: Schemas cho Permission
 """
-from pydantic import BaseModel, ConfigDict, Field
-from typing import Optional, List
-from uuid import UUID
 from datetime import datetime
+from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class RoleBase(BaseModel): 
@@ -39,11 +39,11 @@ class RoleUpdate(BaseModel):
     """Schema khi cập nhật Role - tất cả field Optional."""
     model_config = ConfigDict(from_attributes=True)
     
-    name: Optional[str] = Field(None, min_length=2, max_length=255, description="Tên vai trò")
-    code: Optional[str] = Field(None, min_length=1, max_length=50, pattern=r"^[A-Z][A-Z0-9_]*$", description="Mã định danh vai trò")
-    description: Optional[str] = Field(None, max_length=500, description="Mô tả vai trò")
-    is_default: Optional[bool] = Field(None, description="Có phải vai trò mặc định không?")
-    is_system: Optional[bool] = Field(None, description="Có phải vai trò hệ thống không?")
+    name: str | None = Field(None, min_length=2, max_length=255, description="Tên vai trò")
+    code: str | None = Field(None, min_length=1, max_length=50, pattern=r"^[A-Z][A-Z0-9_]*$", description="Mã định danh vai trò")
+    description: str | None = Field(None, max_length=500, description="Mô tả vai trò")
+    is_default: bool | None = Field(None, description="Có phải vai trò mặc định không?")
+    is_system: bool | None = Field(None, description="Có phải vai trò hệ thống không?")
 
 
 class RoleResponse(RoleBase):
@@ -52,12 +52,12 @@ class RoleResponse(RoleBase):
     is_default: bool = Field(..., description="Có phải vai trò mặc định không?")
     is_system: bool = Field(..., description="Có phải vai trò hệ thống không?")
     created_at: datetime = Field(..., description="Thời gian tạo")
-    updated_at: Optional[datetime] = Field(None, description="Thời gian cập nhật gần nhất")
+    updated_at: datetime | None = Field(None, description="Thời gian cập nhật gần nhất")
 
 
 class RoleWithPermissions(RoleResponse):
     """Role kèm danh sách permissions."""
-    permissions: List["PermissionResponse"] = Field(default=[], description="Danh sách quyền của vai trò")
+    permissions: list[PermissionResponse] = Field(default=[], description="Danh sách quyền của vai trò")
 
 
 class PermissionBase(BaseModel):
@@ -72,13 +72,12 @@ class PermissionBase(BaseModel):
         pattern=r"^[a-z][a-z0-9_:]*$",
         description="Mã quyền (VD: user:read, user:write)"
     )
-    description: Optional[str] = Field(None, max_length=500, description="Mô tả quyền")
+    description: str | None = Field(None, max_length=500, description="Mô tả quyền")
     module: str = Field(..., min_length=1, max_length=100, description="Tên module (VD: user, role)")
 
 
 class PermissionCreate(PermissionBase):
     """Schema khi tạo Permission mới."""
-    pass
 
 
 class PermissionResponse(PermissionBase):

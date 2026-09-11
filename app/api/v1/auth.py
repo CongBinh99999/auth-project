@@ -1,18 +1,17 @@
-from fastapi import APIRouter, Request, status, Depends
-from fastapi.security import OAuth2PasswordRequestForm
 from uuid import UUID
 
-from app.core.dependencies import ActiveUser, oauth2_scheme
-from app.services.auth_service import AuthServiceDep 
+from fastapi import APIRouter, Depends, Request, status
+from fastapi.security import OAuth2PasswordRequestForm
 
 from app.schemas.auth import (
+    LogoutRequest,
+    LogoutResponse,
+    RefreshTokenRequest,
     RegisterRequest,
     RegisterResponse,
     TokenResponse,
-    RefreshTokenRequest, 
-    LogoutRequest,
-    LogoutResponse
 )
+from app.services.auth_service import AuthServiceDep
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 

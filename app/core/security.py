@@ -1,11 +1,11 @@
-import uuid
 import hashlib
-import secrets
-from datetime import datetime, timedelta, timezone
-from typing import Optional, Any
+import uuid
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from jose import jwt
 from passlib.context import CryptContext
+
 from app.config.settings import get_settings
 from app.schemas.auth import TokenPayload
 
@@ -23,14 +23,14 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 def create_token(
     subject: str,
     token_type: str,
-    expires_delta: Optional[timedelta] = None,
-    extra_claims: Optional[dict[str, Any]] = None,
-    jti: Optional[str] = None 
+    expires_delta: timedelta | None = None,
+    extra_claims: dict[str, Any] | None = None,
+    jti: str | None = None 
 ) -> tuple[str, str, datetime]:
     """Create JWT token."""
     
     token_jti = jti if jti else str(uuid.uuid4())
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     if expires_delta:
         expires_at = now + expires_delta
@@ -62,13 +62,13 @@ def create_token(
 
 def create_access_token(
     subject: str, 
-    extra_claims: Optional[dict[str, Any]] = None
+    extra_claims: dict[str, Any] | None = None
 ) -> tuple[str, str, datetime]:
     return create_token(subject, "access", extra_claims=extra_claims)
 
 def create_refresh_token(
     subject: str, 
-    extra_claims: Optional[dict[str, Any]] = None
+    extra_claims: dict[str, Any] | None = None
 ) -> tuple[str, str, datetime]:
     return create_token(subject, "refresh", extra_claims=extra_claims)
 

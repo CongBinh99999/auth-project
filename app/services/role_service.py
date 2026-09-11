@@ -4,29 +4,22 @@ Quản lý vai trò (roles) và quyền hạn (permissions) trong hệ thống R
 """
 
 from typing import Annotated
-from uuid import UUID 
-from fastapi import Depends 
+from uuid import UUID
 
-from app.repositories.role_repository import (
-    RoleRepository, 
-    RoleRepoDep
-)
-
-from app.repositories.permission_repository import(
-    PermissionRepository,
-    PermissionRepoDep
-)
-
-from app.schemas.role import RoleResponse, PermissionResponse
-
-from app.models.role import Role
+from fastapi import Depends
 
 from app.core.exceptions import (
-    RoleNotFoundException,
+    CodeRoleExistsException,
     PermissionDeniedException,
-    CodeRoleExistsException, 
-    PermissionNotFoundException
+    PermissionNotFoundException,
+    RoleNotFoundException,
 )
+from app.repositories.permission_repository import (
+    PermissionRepoDep,
+    PermissionRepository,
+)
+from app.repositories.role_repository import RoleRepoDep, RoleRepository
+from app.schemas.role import PermissionResponse, RoleResponse
 
 
 class RoleService:

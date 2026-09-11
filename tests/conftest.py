@@ -5,14 +5,13 @@ Contains:
   Tests against directly running server baseURL
 """
 
-import pytest
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 from uuid import uuid4
 
+import pytest
 from httpx import AsyncClient
 
 from app.config.settings import get_settings
-
 
 settings = get_settings()
 
@@ -21,7 +20,7 @@ BASE_URL = "http://localhost:8000"
 
 
 @pytest.fixture
-async def async_client() -> AsyncGenerator[AsyncClient, None]:
+async def async_client() -> AsyncGenerator[AsyncClient]:
     """Get async test client for running server."""
     async with AsyncClient(base_url=BASE_URL) as client:
         yield client

@@ -1,9 +1,9 @@
-from uuid import UUID 
-from typing import List, Optional, Annotated 
-from sqlalchemy import select, update, and_, func, or_, delete
-from sqlalchemy.ext.asyncio import AsyncSession 
+from datetime import UTC, datetime, timedelta
+from typing import Annotated
+
 from fastapi import Depends
-from datetime import datetime, timezone, timedelta
+from sqlalchemy import and_, delete, func, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config.database import get_db
 from app.models.login_attempt import LoginAttempt
@@ -49,7 +49,7 @@ class LoginAttemptRepository:
         Returns:
             Danh sách LoginAttempt trong khoảng thời gian.
         """
-        cutoff = datetime.now(timezone.utc) - timedelta(minutes=minutes)
+        cutoff = datetime.now(UTC) - timedelta(minutes=minutes)
         result = await self.db.execute(
             select(LoginAttempt)
             .where(
@@ -73,7 +73,7 @@ class LoginAttemptRepository:
         Returns:
             Danh sách LoginAttempt trong khoảng thời gian.
         """
-        cutoff = datetime.now(timezone.utc) - timedelta(minutes=minutes)
+        cutoff = datetime.now(UTC) - timedelta(minutes=minutes)
         result = await self.db.execute(
             select(LoginAttempt)
             .where(
@@ -98,7 +98,7 @@ class LoginAttemptRepository:
         Returns:
             Số lần login thất bại.
         """
-        cutoff = datetime.now(timezone.utc) - timedelta(minutes=minutes)
+        cutoff = datetime.now(UTC) - timedelta(minutes=minutes)
         result = await self.db.execute(
             select(func.count())
             .select_from(LoginAttempt)
@@ -141,7 +141,7 @@ class LoginAttemptRepository:
         Returns:
             Số lượng records đã xóa.
         """
-        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+        cutoff = datetime.now(UTC) - timedelta(days=days)
         result = await self.db.execute(
             delete(LoginAttempt)
             .where(LoginAttempt.attempted_at <= cutoff)
@@ -161,7 +161,7 @@ class LoginAttemptRepository:
         Returns:
             Số lượng records đã xóa.
         """
-        cutoff = datetime.now(timezone.utc) - timedelta(minutes=minutes)
+        cutoff = datetime.now(UTC) - timedelta(minutes=minutes)
         result = await self.db.execute(
             delete(LoginAttempt)
             .where(

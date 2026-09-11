@@ -1,14 +1,10 @@
-from fastapi import APIRouter, status, Depends
 from uuid import UUID
 
+from fastapi import APIRouter, status
+
 from app.core.dependencies import ActiveUser
+from app.schemas.device import DeviceListResponse, DeviceResponse, DeviceUpdate
 from app.services.device_service import DeviceServiceDep
-from app.schemas.device import (
-    DeviceListResponse,
-    DeviceResponse,
-    DeviceUpdate
-)
-from fastapi.security import HTTPBearer
 
 router = APIRouter(
     prefix="/devices", 

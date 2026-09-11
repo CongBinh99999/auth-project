@@ -3,36 +3,28 @@
 Quản lý JWT tokens bao gồm tạo, verify, và blacklist tokens.
 """
 
-from uuid import UUID 
-from typing import Annotated
-from fastapi import Depends
 from datetime import datetime
+from typing import Annotated
+from uuid import UUID
 
-from app.repositories.token_blacklist_repository import (
-    TokenBlacklistRepository, 
-    TokenBlacklistRepoDep
-)
+from fastapi import Depends
+from jose import JWTError
+from pydantic import ValidationError
 
-from app.schemas.auth import (
-    TokenPayload,
-    TokenResponse
-)
-
-from app.models.token_blacklist import TokenBlacklist, TokenType
-
+from app.config.settings import get_settings
+from app.core.exceptions import InvalidTokenException, TokenExpiredException
 from app.core.security import (
     create_access_token,
     create_refresh_token,
+    create_token,
     decode_token,
-    create_token
 )
-
-from app.core.exceptions import (
-    InvalidTokenException,
-    TokenExpiredException
+from app.models.token_blacklist import TokenBlacklist, TokenType
+from app.repositories.token_blacklist_repository import (
+    TokenBlacklistRepoDep,
+    TokenBlacklistRepository,
 )
-
-from app.config.settings import get_settings
+from app.schemas.auth import TokenPayload, TokenResponse
 
 settings = get_settings()
 
@@ -132,8 +124,8 @@ class TokenService:
         """
         try:
             return decode_token(token)
-        except Exception:
-            raise InvalidTokenException()
+        except (JWTError, ValidationError) as e:
+            raise InvalidTokenException() from e
 
 
     async def verify_token(self, token: str) -> TokenPayload:

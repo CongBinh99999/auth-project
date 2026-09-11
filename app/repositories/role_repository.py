@@ -1,13 +1,14 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from typing import Annotated
 from uuid import UUID
-from typing import Optional, Annotated, List
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update, delete, join, and_
+
 from fastapi import Depends
+from sqlalchemy import delete, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config.database import get_db
-from app.models.role import Role
 from app.models.permission import Permission
+from app.models.role import Role
 from app.models.role_permission import RolePermission
 
 
@@ -23,7 +24,7 @@ class RoleRepository:
         self.db = db
 
 
-    async def get_by_id(self, role_id: UUID) -> Optional[Role]: 
+    async def get_by_id(self, role_id: UUID) -> Role | None: 
         """Lấy role theo ID.
         
         Args:
@@ -40,7 +41,7 @@ class RoleRepository:
         return result.scalar_one_or_none()
     
 
-    async def get_by_code(self, code: str) -> Optional[Role]: 
+    async def get_by_code(self, code: str) -> Role | None: 
         """Lấy role theo code.
         
         Args:
@@ -57,7 +58,7 @@ class RoleRepository:
         return result.scalar_one_or_none()
 
 
-    async def get_default_role(self) -> Optional[Role]:
+    async def get_default_role(self) -> Role | None:
         """Lấy role mặc định của hệ thống.
         
         Returns:
@@ -116,7 +117,7 @@ class RoleRepository:
             if hasattr(role, key): 
                 setattr(role, key, value)
 
-        role.updated_at = datetime.now(timezone.utc)
+        role.updated_at = datetime.now(UTC)
 
         await self.db.flush()
         await self.db.refresh(role)

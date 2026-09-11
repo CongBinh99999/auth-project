@@ -7,14 +7,14 @@ from pathlib import Path
 # Thêm project root vào path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.orm import sessionmaker
 
 from app.config.settings import get_settings
-from app.models.user import User
-from app.models.role import Role
 from app.core.security import hash_password
+from app.models.role import Role
+from app.models.user import User
 
 settings = get_settings()
 
@@ -66,7 +66,7 @@ async def create_admin():
         
         print("✅ Admin user đã được tạo thành công!")
         print(f"   Email: {admin_user.email}")
-        print(f"   Password: Admin@123")
+        print("   Password: Admin@123")
         print(f"   Role: {admin_role.name}")
         print(f"   ID: {admin_user.id}")
         print("\n⚠️  Hãy đổi password sau khi đăng nhập!")

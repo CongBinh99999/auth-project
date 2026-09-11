@@ -6,31 +6,22 @@ và đổi mật khẩu.
 
 from typing import Annotated
 from uuid import UUID
+
 from fastapi import Depends
 
-from app.repositories.user_repository import (
-    UserRepoDep, 
-    UserRepository
-)
-
-from app.repositories.token_family_repository import (
-    TokenFamilyRepoDep, 
-    TokenFamilyRepository
-)
-
-from app.schemas.user import UserResponse
-
 from app.core.exceptions import (
-    UserNotFoundException,
     EmailExistsException,
-    InvalidCredentialsException
+    InvalidCredentialsException,
+    UserNotFoundException,
 )
+from app.core.security import hash_password, verify_password
 from app.models.user import User
-
-from app.core.security import (
-    hash_password,
-    verify_password
+from app.repositories.token_family_repository import (
+    TokenFamilyRepoDep,
+    TokenFamilyRepository,
 )
+from app.repositories.user_repository import UserRepoDep, UserRepository
+from app.schemas.user import UserResponse
 
 
 class UserService:

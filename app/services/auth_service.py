@@ -4,48 +4,39 @@ Orchestration service điều phối toàn bộ quy trình authentication
 bao gồm Register, Login, Logout, và Token Refresh.
 """
 
-from uuid import UUID, uuid4
+from datetime import UTC, datetime
 from typing import Annotated
+from uuid import UUID, uuid4
+
 from fastapi import Depends
-from datetime import datetime, timezone
-
-from app.repositories.user_repository import(
-    UserRepoDep, 
-    UserRepository
-)
-
-from app.repositories.role_repository import(
-    RoleRepository,
-    RoleRepoDep
-)
-
-from app.services.token_service import TokenService, TokenBlacklistServiceDep
-from app.services.token_family_service import TokenFamilyService, TokenFamilyServiceDep
-from app.services.login_attempt_service import LoginAttemptService, LoginAttemptServiceDep
-from app.services.device_service import DeviceService, DeviceServiceDep
-from app.services.email_verification_service import EmailVerificationService, EmailVerificationServiceDep
-from app.services.email_service import EmailService, EmailServiceDep
-
-from app.core.security import (
-    hash_password,
-    verify_password
-)
-
-from app.models.user import User
-from app.models.token_blacklist import TokenType
 
 from app.core.exceptions import (
     EmailExistsException,
     InvalidCredentialsException,
+    RoleNotFoundException,
+    TooManyLoginAttemptsException,
     UserInactiveException,
     UserNotVerifiedException,
-    TooManyLoginAttemptsException,
-    RoleNotFoundException
 )
-
+from app.core.security import hash_password, verify_password
+from app.models.token_blacklist import TokenType
+from app.models.user import User
+from app.repositories.role_repository import RoleRepoDep, RoleRepository
+from app.repositories.user_repository import UserRepoDep, UserRepository
 from app.schemas.auth import TokenResponse
-
 from app.schemas.user import UserResponse
+from app.services.device_service import DeviceService, DeviceServiceDep
+from app.services.email_service import EmailService, EmailServiceDep
+from app.services.email_verification_service import (
+    EmailVerificationService,
+    EmailVerificationServiceDep,
+)
+from app.services.login_attempt_service import (
+    LoginAttemptService,
+    LoginAttemptServiceDep,
+)
+from app.services.token_family_service import TokenFamilyService, TokenFamilyServiceDep
+from app.services.token_service import TokenBlacklistServiceDep, TokenService
 
 
 class AuthService:
@@ -237,7 +228,7 @@ class AuthService:
 
         await self.user_repo.update(
             user,
-            last_login_at=datetime.now(timezone.utc)
+            last_login_at=datetime.now(UTC)
         )
 
         if device:
@@ -253,7 +244,7 @@ class AuthService:
     async def refresh_token(self, refresh_token: str) -> TokenResponse:
         """Làm mới access token."""
         
-        family, payload = await self.token_family_service.validate_refresh_token(refresh_token)
+        family, _ = await self.token_family_service.validate_refresh_token(refresh_token)
 
         new_jti = str(uuid4())
         

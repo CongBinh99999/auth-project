@@ -1,9 +1,10 @@
-from datetime import datetime, timezone
-from uuid import UUID 
-from typing import Annotated, Optional 
-from sqlalchemy import select, delete
+from datetime import UTC, datetime
+from typing import Annotated
+from uuid import UUID
+
+from fastapi import Depends
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import Depends 
 
 from app.config.database import get_db
 from app.models.password_reset_token import PasswordResetToken
@@ -39,7 +40,7 @@ class PasswordResetRepository:
         return password_reset
 
 
-    async def get_by_token_hash(self, token_hash: str) -> Optional[PasswordResetToken]:
+    async def get_by_token_hash(self, token_hash: str) -> PasswordResetToken | None:
         """Lấy token theo hash.
         
         Args:
@@ -56,7 +57,7 @@ class PasswordResetRepository:
         return result.scalar_one_or_none()
 
 
-    async def get_pending_by_user(self, user_id: UUID) -> Optional[PasswordResetToken]:
+    async def get_pending_by_user(self, user_id: UUID) -> PasswordResetToken | None:
         """Lấy token pending của user.
         
         Args:
@@ -82,7 +83,7 @@ class PasswordResetRepository:
         Returns:
             PasswordResetToken đã được cập nhật.
         """
-        token.used_at = datetime.now(timezone.utc)
+        token.used_at = datetime.now(UTC)
 
         await self.db.flush()
         await self.db.refresh(token)
@@ -113,7 +114,7 @@ class PasswordResetRepository:
         Returns:
             Số lượng tokens đã xóa.
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         result = await self.db.execute(
             delete(PasswordResetToken)

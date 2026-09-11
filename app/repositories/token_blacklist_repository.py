@@ -1,9 +1,9 @@
-from uuid import UUID
-from typing import Optional, Annotated 
-from datetime import datetime, timezone 
-from sqlalchemy import select, delete
-from sqlalchemy.ext.asyncio import AsyncSession 
+from datetime import UTC, datetime
+from typing import Annotated
+
 from fastapi import Depends
+from sqlalchemy import delete, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config.database import get_db
 from app.models.token_blacklist import TokenBlacklist
@@ -62,7 +62,7 @@ class TokenBlacklistRepository:
         Returns:
             Số lượng tokens đã xóa.
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         
         result = await self.db.execute(
             delete(TokenBlacklist)

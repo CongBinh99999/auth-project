@@ -4,29 +4,27 @@ Quản lý Token Families để implement Refresh Token Rotation,
 bảo vệ chống token theft attacks.
 """
 
-from datetime import datetime, timezone, timedelta
-from uuid import UUID
+from datetime import UTC, datetime, timedelta
 from typing import Annotated
+from uuid import UUID
+
 from fastapi import Depends
-
-from app.repositories.token_family_repository import (
-    TokenFamilyRepository,
-    TokenFamilyRepoDep
-)
-
-from app.schemas.auth import TokenPayload
-
-from app.models.token_family import TokenFamily
-
-from app.core.exceptions import (
-    InvalidTokenException,
-    TokenRevokedException,
-    TokenExpiredException
-)
-
-from app.core.security import decode_token
+from jose import JWTError
+from pydantic import ValidationError
 
 from app.config.settings import get_settings
+from app.core.exceptions import (
+    InvalidTokenException,
+    TokenExpiredException,
+    TokenRevokedException,
+)
+from app.core.security import decode_token
+from app.models.token_family import TokenFamily
+from app.repositories.token_family_repository import (
+    TokenFamilyRepoDep,
+    TokenFamilyRepository,
+)
+from app.schemas.auth import TokenPayload
 
 setting = get_settings()
 
@@ -63,7 +61,7 @@ class TokenFamilyService:
         Returns:
             TokenFamily entity mới.
         """
-        expires_at = datetime.now(timezone.utc) + timedelta(days=setting.REFRESH_TOKEN_EXPIRE_DAYS)
+        expires_at = datetime.now(UTC) + timedelta(days=setting.REFRESH_TOKEN_EXPIRE_DAYS)
 
         return await self.token_family_repo.create(
             user_id=user_id,
@@ -96,8 +94,8 @@ class TokenFamilyService:
         """
         try:
             payload = decode_token(refresh_token)
-        except Exception: 
-            raise InvalidTokenException()
+        except (JWTError, ValidationError) as e:
+            raise InvalidTokenException() from e
         
         if not payload.family_id: 
             raise InvalidTokenException()
@@ -215,7 +213,7 @@ class TokenFamilyService:
         """
         return await self.token_family_repo.update_token(
             family, 
-            last_used_at=datetime.now(timezone.utc)
+            last_used_at=datetime.now(UTC)
         )
 
 

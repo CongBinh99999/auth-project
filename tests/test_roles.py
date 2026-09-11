@@ -1,7 +1,8 @@
 """Tests for Roles API endpoints."""
 
-import pytest
 from uuid import uuid4
+
+import pytest
 from httpx import AsyncClient
 
 

@@ -4,16 +4,16 @@ Theo dõi và kiểm soát các lần đăng nhập để bảo vệ
 chống brute-force attacks.
 """
 
-from uuid import UUID 
-from typing import Annotated 
+from typing import Annotated
+from uuid import UUID
+
 from fastapi import Depends
 
-from app.repositories.login_attempt_repository import (
-    LoginAttemptRepository, 
-    LoginAttemptRepoDep
-)
-
 from app.models.login_attempt import LoginAttempt
+from app.repositories.login_attempt_repository import (
+    LoginAttemptRepoDep,
+    LoginAttemptRepository,
+)
 
 
 class LoginAttemptService:

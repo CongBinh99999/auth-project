@@ -8,11 +8,18 @@ Bao gồm:
 - TokenPayload, TokenInfo: Schemas cho JWT token
 - ActiveSessionResponse: Schema cho danh sách phiên đăng nhập
 """
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator, field_validator
-from typing import Optional, Any, List
-from datetime import datetime, timezone
 import uuid
-from typing_extensions import Self
+from datetime import UTC, datetime
+from typing import Any, Self
+
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    EmailStr,
+    Field,
+    field_validator,
+    model_validator,
+)
 
 from app.utils.constants import TokenType
 
@@ -23,7 +30,7 @@ class LoginRequest(BaseModel):
     
     email: EmailStr = Field(..., description="Địa chỉ email của người dùng")
     password: str = Field(..., min_length=8, max_length=255, description="Mật khẩu người dùng")
-    device_info: Optional[str] = Field(None, max_length=500, description="Thông tin thiết bị để theo dõi phiên đăng nhập")
+    device_info: str | None = Field(None, max_length=500, description="Thông tin thiết bị để theo dõi phiên đăng nhập")
     
     @field_validator("email")
     @classmethod
@@ -39,20 +46,20 @@ class RegisterRequest(BaseModel):
     email: EmailStr = Field(..., description="Địa chỉ email của người dùng")
     password: str = Field(..., min_length=8, max_length=255, description="Mật khẩu người dùng")
     confirm_password: str = Field(..., min_length=8, max_length=255, description="Xác nhận mật khẩu")
-    full_name: Optional[str] = Field(None, min_length=1, max_length=255, description="Họ và tên đầy đủ")
+    full_name: str | None = Field(None, min_length=1, max_length=255, description="Họ và tên đầy đủ")
 
     @model_validator(mode='before')
     @classmethod
     def pre_process_data(cls, data: Any) -> Any:
         """Chuẩn hóa dữ liệu đầu vào trước khi validate."""
         if isinstance(data, dict):
-            if "email" in data and data["email"]:
+            if data.get("email"):
                 data["email"] = data["email"].strip().lower()
-            if "password" in data and data["password"]:
+            if data.get("password"):
                 data["password"] = data["password"].strip()
-            if "confirm_password" in data and data["confirm_password"]:
+            if data.get("confirm_password"):
                 data["confirm_password"] = data["confirm_password"].strip()
-            if "full_name" in data and data["full_name"]:
+            if data.get("full_name"):
                 data["full_name"] = data["full_name"].strip()
         return data
 
@@ -75,8 +82,8 @@ class LogoutRequest(BaseModel):
     """Request schema cho đăng xuất."""
     model_config = ConfigDict(from_attributes=True)
     
-    access_token: Optional[str] = Field(..., description="Access token cần vô hiệu hóa")
-    refresh_token: Optional[str] = Field(None, description="Refresh token cần vô hiệu hóa")
+    access_token: str | None = Field(..., description="Access token cần vô hiệu hóa")
+    refresh_token: str | None = Field(None, description="Refresh token cần vô hiệu hóa")
     logout_all_devices: bool = Field(default=False, description="Đăng xuất khỏi tất cả thiết bị")
 
 
@@ -87,7 +94,7 @@ class TokenResponse(BaseModel):
     access_token: str = Field(..., description="JWT access token")
     token_type: str = Field(default="bearer", description="Loại token")
     refresh_token: str = Field(..., description="JWT refresh token để làm mới token")
-    expires_in: Optional[int] = Field(None, description="Thời gian hết hạn access token (giây)")
+    expires_in: int | None = Field(None, description="Thời gian hết hạn access token (giây)")
 
 
 class RegisterResponse(BaseModel):
@@ -114,7 +121,7 @@ class AuthErrorResponse(BaseModel):
     
     error: str = Field(..., description="Loại lỗi")
     message: str = Field(..., description="Thông báo lỗi")
-    detail: Optional[str] = Field(None, description="Chi tiết lỗi")
+    detail: str | None = Field(None, description="Chi tiết lỗi")
 
 
 class TokenPayload(BaseModel):
@@ -124,14 +131,14 @@ class TokenPayload(BaseModel):
     sub: uuid.UUID = Field(..., description="Subject - ID người dùng")
     jti: uuid.UUID = Field(..., description="JWT ID - Mã định danh token duy nhất")
     type: TokenType = Field(default=TokenType.ACCESS, description="Loại token (access/refresh)")
-    family_id: Optional[uuid.UUID] = Field(None, description="ID nhóm token cho refresh token rotation")
+    family_id: uuid.UUID | None = Field(None, description="ID nhóm token cho refresh token rotation")
     iat: datetime = Field(..., description="Thời gian phát hành token")
     exp: datetime = Field(..., description="Thời gian hết hạn token")
     
     @property
     def is_expired(self) -> bool:
         """Kiểm tra token đã hết hạn chưa."""
-        return datetime.now(timezone.utc) > self.exp
+        return datetime.now(UTC) > self.exp
 
 
 class TokenInfo(BaseModel):
@@ -150,5 +157,5 @@ class ActiveSessionResponse(BaseModel):
     """Schema cho danh sách phiên đăng nhập đang hoạt động."""
     model_config = ConfigDict(from_attributes=True)
     
-    sessions: List[TokenInfo] = Field(default=[], description="Danh sách phiên đăng nhập")
+    sessions: list[TokenInfo] = Field(default=[], description="Danh sách phiên đăng nhập")
     total_count: int = Field(default=0, description="Tổng số phiên đang hoạt động")

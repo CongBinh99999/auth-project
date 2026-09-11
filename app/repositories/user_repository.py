@@ -1,16 +1,15 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from typing import Annotated
 from uuid import UUID
-from typing import Optional, List, Annotated
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, delete, update, and_, or_, func 
-from sqlalchemy.orm import selectinload
-from fastapi import Depends
 
+from fastapi import Depends
+from sqlalchemy import select, update
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.config.database import get_db
-from app.models.user import User 
 from app.models.role import Role
-from app.schemas.user import UserCreate, UserUpdate
+from app.models.user import User
 
 
 class UserRepository: 
@@ -25,7 +24,7 @@ class UserRepository:
         self.db = db 
 
     
-    async def get_by_id(self, user_id: UUID) -> Optional[User]: 
+    async def get_by_id(self, user_id: UUID) -> User | None: 
         """Lấy user theo ID.
         
         Args:
@@ -45,7 +44,7 @@ class UserRepository:
         return result.scalar_one_or_none()
 
 
-    async def get_by_email(self, email: str) -> Optional[User]: 
+    async def get_by_email(self, email: str) -> User | None: 
         """Lấy user theo email.
         
         Args:
@@ -92,7 +91,7 @@ class UserRepository:
             if hasattr(user, key): 
                 setattr(user, key, value)
         
-        user.updated_at = datetime.now(timezone.utc)
+        user.updated_at = datetime.now(UTC)
         await self.db.flush()
         await self.db.refresh(user)
 
@@ -110,7 +109,7 @@ class UserRepository:
             User đã được cập nhật.
         """
         user.hashed_password = new_password
-        user.updated_at = datetime.now(timezone.utc)
+        user.updated_at = datetime.now(UTC)
         
         await self.db.flush()
         await self.db.refresh(user)
@@ -139,7 +138,7 @@ class UserRepository:
             .where(User.id == user_id)
             .values(
                 is_verified=True, 
-                updated_at=datetime.now(timezone.utc)
+                updated_at=datetime.now(UTC)
             )
         )
         await self.db.flush()
