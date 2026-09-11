@@ -91,24 +91,24 @@ class EmailVerificationService:
             TokenExpiredException: Token đã hết hạn.
         """
         hashed_token = hash_verification_token(token)
-        verification_token = await self.verification_repo.get_by_token_hash(hashed_token)
+        claimed = await self.verification_repo.mark_verified_if_unused(hashed_token)
 
-        if not verification_token: 
+        if claimed is None:
+            # Không tồn tại, hoặc request khác đã dùng token này trước.
             raise InvalidTokenException()
 
-        if verification_token.verified_at is not None:
-            raise InvalidTokenException()
+        user_id, expires_at = claimed
 
-        if verification_token.expires_at < datetime.now(UTC): 
+        if expires_at < datetime.now(UTC):
+            # raise -> get_db rollback -> token chưa bị tiêu mất.
             raise TokenExpiredException()
-        
-        await self.user_repo.verify_by_id(verification_token.user_id)
-        await self.verification_repo.mark_verified(verification_token)
 
-        return True 
+        await self.user_repo.verify_by_id(user_id)
+
+        return True
         
     
-    async def resend_email(self, user_id: UUID) -> str:
+    async def resend_email(self, user_id: UUID) -> str | None:
         """Gửi lại email xác thực.
         
         Xóa token cũ (nếu có) và tạo token mới.
@@ -123,6 +123,13 @@ class EmailVerificationService:
         if not user:
              # Should practically not happen if called correctly
              raise InvalidTokenException()
+
+        pending = await self.verification_repo.get_pending_by_user(user_id)
+        cooldown = timedelta(seconds=setting.RESEND_VERIFICATION_COOLDOWN_SECONDS)
+
+        if pending and pending.created_at > datetime.now(UTC) - cooldown:
+            # Chặn mail-bomb: link hiện tại vẫn còn dùng được.
+            return None
 
         await self.verification_repo.delete_by_user(user_id)
         return await self.create_verification_token(user_id, user.email)
