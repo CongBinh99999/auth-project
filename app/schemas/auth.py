@@ -82,7 +82,6 @@ class LogoutRequest(BaseModel):
     """Request schema cho đăng xuất."""
     model_config = ConfigDict(from_attributes=True)
     
-    access_token: str | None = Field(..., description="Access token cần vô hiệu hóa")
     refresh_token: str | None = Field(None, description="Refresh token cần vô hiệu hóa")
     logout_all_devices: bool = Field(default=False, description="Đăng xuất khỏi tất cả thiết bị")
 

@@ -1,6 +1,9 @@
+from typing import Annotated
+
 from fastapi import APIRouter, BackgroundTasks, Depends, Query, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
 
+from app.core.dependencies import oauth2_scheme
 from app.schemas.auth import (
     LogoutRequest,
     LogoutResponse,
@@ -24,6 +27,7 @@ from app.schemas.password_reset import (
 from app.services.auth_service import AuthServiceDep
 from app.services.email_verification_service import EmailVerificationServiceDep
 from app.services.password_reset_service import PasswordResetServiceDep
+from app.utils.constants import TokenType
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -94,17 +98,20 @@ async def refresh(
 )
 async def logout(
     data: LogoutRequest,
-    auth_service: AuthServiceDep
+    auth_service: AuthServiceDep,
+    access_token: Annotated[str, Depends(oauth2_scheme)]
 ) -> LogoutResponse: 
-    """Đăng xuất - lấy token từ request body."""
+    """Đăng xuất - access token lấy từ header Authorization."""
     
     await auth_service.logout(
-        access_token=data.access_token,
+        access_token=access_token,
         refresh_token=data.refresh_token
     )
     
     if data.logout_all_devices:
-        payload = auth_service.token_service.decode_token(data.access_token)
+        payload = auth_service.token_service.decode_token(
+            access_token, expected_type=TokenType.ACCESS
+        )
         await auth_service.logout_all(user_id=payload.sub)
 
     return LogoutResponse(
@@ -119,12 +126,14 @@ async def logout(
     summary="Đăng xuất khỏi tất cả thiết bị"
 )
 async def logout_all(
-    data: LogoutRequest, 
-    auth_service: AuthServiceDep
+    auth_service: AuthServiceDep,
+    access_token: Annotated[str, Depends(oauth2_scheme)]
 ) -> LogoutResponse: 
-    """Đăng xuất tất cả - lấy token từ request body."""
+    """Đăng xuất tất cả - access token lấy từ header Authorization."""
     
-    payload = auth_service.token_service.decode_token(data.access_token)
+    payload = auth_service.token_service.decode_token(
+        access_token, expected_type=TokenType.ACCESS
+    )
     count = await auth_service.logout_all(payload.sub)
 
     return LogoutResponse(
