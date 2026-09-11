@@ -15,6 +15,7 @@ from app.core.exceptions import (
     InvalidCredentialsException,
     RoleNotFoundException,
     TooManyLoginAttemptsException,
+    TooManyRegistrationsException,
     UserInactiveException,
     UserNotVerifiedException,
 )
@@ -94,6 +95,8 @@ class AuthService:
         email: str, 
         password: str, 
         background_tasks: BackgroundTasks,
+        ip_address: str,
+        user_agent: str | None = None,
         full_name: str | None = None
     ) -> UserResponse:
         """Đăng ký tài khoản mới.
@@ -117,6 +120,9 @@ class AuthService:
             EmailExistsException: Email đã được sử dụng.
             RoleNotFoundException: Không tìm thấy default role.
         """
+        if await self.login_attempt_service.is_registration_throttled(ip_address):
+            raise TooManyRegistrationsException()
+
         user = await self.user_repo.get_by_email(email)
         if user: 
             raise EmailExistsException()
@@ -132,6 +138,13 @@ class AuthService:
             hashed_password=hashed_password,
             full_name=full_name,
             role_id=default_role.id
+        )
+
+        await self.login_attempt_service.record_registration(
+            email=new_user.email,
+            ip_address=ip_address,
+            user_id=new_user.id,
+            user_agent=user_agent
         )
 
         verification_token = await self.email_verification_service.create_verification_token(

@@ -8,6 +8,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config.database import get_db
 from app.models.login_attempt import LoginAttempt
 
+# Đánh dấu bản ghi đăng ký trong bảng login_attempts.
+REGISTER_MARKER = "register"
+
 
 class LoginAttemptRepository: 
     """Repository cho LoginAttempt entity - theo dõi và quản lý các lần đăng nhập."""
@@ -137,6 +140,29 @@ class LoginAttemptRepository:
                     criterion,
                     LoginAttempt.attempted_at >= cutoff,
                     LoginAttempt.is_successful.is_(False)
+                )
+            )
+        )
+
+        return result.scalar() or 0
+
+
+    async def count_registrations_by_ip(self, ip_address: str, minutes: int) -> int:
+        """Đếm số lần đăng ký gần đây từ một IP.
+
+        Đăng ký được ghi vào chính bảng này với is_successful=True và
+        failure_reason='register', nên không bao giờ lọt vào bộ đếm
+        brute-force (bộ đó chỉ đếm is_successful=False).
+        """
+        cutoff = datetime.now(UTC) - timedelta(minutes=minutes)
+        result = await self.db.execute(
+            select(func.count())
+            .select_from(LoginAttempt)
+            .where(
+                and_(
+                    LoginAttempt.ip_address == ip_address,
+                    LoginAttempt.failure_reason == REGISTER_MARKER,
+                    LoginAttempt.attempted_at >= cutoff
                 )
             )
         )
