@@ -1,6 +1,7 @@
 
 from functools import lru_cache
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -40,6 +41,33 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore"
     )
+
+    @model_validator(mode="after")
+    def _reject_placeholder_secret(self) -> "Settings":  # noqa: UP037
+        """Không cho chạy ngoài development với JWT_SECRET mẫu.
+
+        Secret mẫu nằm sẵn trong .env.example và trong default của chính class
+        này, nên rất dễ đi thẳng lên server. Ai biết nó thì ký được token của
+        bất kỳ user nào.
+        """
+        placeholders = {"", "SECRET_KEY", "change_this_to_a_secure_random_string"}
+
+        if self.APP_ENV == "development":
+            if self.JWT_SECRET in placeholders:
+                print("[CONFIG] JWT_SECRET đang là giá trị mẫu - chỉ chấp nhận ở development")
+            return self
+
+        if self.JWT_SECRET in placeholders or len(self.JWT_SECRET) < 32:
+            # RuntimeError chứ không phải ValueError: pydantic bọc ValueError
+            # thành ValidationError và in kèm toàn bộ input, trong đó có
+            # SMTP_PASSWORD. RuntimeError thoát thẳng ra, không lộ gì.
+            raise RuntimeError(
+                f"JWT_SECRET không hợp lệ cho APP_ENV={self.APP_ENV}: "
+                "phải đặt giá trị riêng, tối thiểu 32 ký tự"
+            )
+
+        return self
+
 
 @lru_cache
 def get_settings() -> Settings: 
