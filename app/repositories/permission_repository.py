@@ -55,23 +55,6 @@ class PermissionRepository:
         return result.scalar_one_or_none()
 
 
-    async def get_by_module(self, module: str) -> list[Permission]: 
-        """Lấy tất cả permissions của một module.
-        
-        Args:
-            module: Tên module (VD: user, role, auth).
-            
-        Returns:
-            Danh sách Permission objects thuộc module.
-        """
-        result = await self.db.execute(
-            select(Permission)
-            .where(Permission.module == module)
-        )
-
-        return list(result.scalars().all())
-
-
     async def get_all(self) -> list[Permission]: 
         """Lấy tất cả permissions trong hệ thống.
         

@@ -1,6 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
-from sqlmodel import SQLModel
 
 from app.config.settings import get_settings
 
@@ -34,9 +33,6 @@ async def get_db() -> AsyncSession:
         finally: 
             await session.close()
 
-async def init_db(): 
-    async with engine.begin() as conn: 
-        await conn.run_sync(SQLModel.metadata.create_all)
 
 
 """

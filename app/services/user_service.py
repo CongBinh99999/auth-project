@@ -45,25 +45,6 @@ class UserService:
         self.token_family_repo = token_family_repo
 
 
-    async def get_user_profile(self, user_id: UUID) -> UserResponse:
-        """Lấy thông tin profile của user.
-        
-        Args:
-            user_id: UUID của user cần lấy thông tin.
-            
-        Returns:
-            UserResponse chứa thông tin profile.
-            
-        Raises:
-            UserNotFoundException: User không tồn tại.
-        """
-        user = await self.user_repo.get_by_id(user_id)
-        if not user: 
-            raise UserNotFoundException()
-        
-        return UserResponse.model_validate(user)
-
-    
     async def update_user_profile(
         self, 
         user_id: UUID, 
