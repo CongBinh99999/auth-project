@@ -76,6 +76,11 @@ Generate a real secret with `openssl rand -hex 32`.
 `GET /auth/verify-email?token=...` is the URL that goes out in the email. The
 `POST` variant exists for a client that already holds the token.
 
+`GET /reset-password` is served at the root, outside `/api/v1`, because that is
+where the password reset email links. It is a static form that posts to
+`POST /api/v1/auth/reset-password`; the token stays in the query string and is
+read by the page's own JavaScript, never interpolated into the HTML.
+
 `/logout` and `/logout-all` read the access token from the `Authorization`
 header, not the request body. `/logout` takes `refresh_token` in the body because
 a header cannot carry it.
@@ -141,7 +146,5 @@ repository directly.
   per-IP limits on login and registration stop discriminating.
 - **Tests share the configured database** and leave data behind; they are not safe
   to run in parallel.
-- **No `/reset-password` page.** The password reset email links to a frontend
-  route that does not exist yet; the endpoint works for any client holding the token.
 - **Access tokens survive revocation** until they expire, at most
   `ACCESS_TOKEN_EXPIRE_MINUTES`. Only refresh tokens are revoked immediately.
