@@ -16,6 +16,15 @@ class _Device:
         self.status = status
 
 
+class _FamilyRepo:
+    def __init__(self):
+        self.revoked = []
+
+    async def revoke_all_for_device(self, device_id):
+        self.revoked.append(device_id)
+        return 1
+
+
 class _DeviceRepo:
     def __init__(self, existing=None):
         self.existing = existing
@@ -77,7 +86,7 @@ async def test_unknown_device_is_created_once():
 async def test_block_then_unblock_restores_access():
     device = _Device()
     repo = _DeviceRepo(device)
-    service = DeviceService(repo)
+    service = DeviceService(repo, _FamilyRepo())
     user_id = uuid4()
 
     await service.block_device(device.id, user_id)
@@ -102,3 +111,26 @@ async def test_duplicate_fingerprints_do_not_break_login():
 
     with pytest.raises(DeviceBlockedException):
         await DeviceService(_DuplicateRepo()).register_device(user_id=uuid4(), fingerprint="fp")
+
+
+async def test_blocking_revokes_the_device_sessions():
+    """Đổi cờ thôi là chưa đủ - phiên đang chạy trên device đó phải chết.
+
+    Nếu không, điện thoại bị mất vẫn refresh token vô hạn sau khi chủ máy
+    bấm chặn.
+    """
+    device = _Device()
+    families = _FamilyRepo()
+
+    await DeviceService(_DeviceRepo(device), families).block_device(device.id, uuid4())
+
+    assert families.revoked == [device.id]
+
+
+async def test_unblock_leaves_a_non_blocked_device_alone():
+    """Endpoint này chỉ gỡ chặn, không phải nút 'đặt trạng thái active'."""
+    device = _Device(DeviceStatus.INACTIVE)
+
+    await DeviceService(_DeviceRepo(device), _FamilyRepo()).unblock_device(device.id, uuid4())
+
+    assert device.status == DeviceStatus.INACTIVE

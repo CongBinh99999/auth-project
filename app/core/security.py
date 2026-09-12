@@ -85,5 +85,13 @@ def device_fingerprint(user_agent: str | None) -> str:
     Lấy từ user-agent chứ không lấy IP: IP đổi liên tục trên mạng di động,
     dùng nó thì mỗi lần đăng nhập lại thành một device mới và việc chặn
     device mất hết ý nghĩa.
+
+    GIỚI HẠN: user-agent do client tự khai. Kẻ tấn công đổi header là thành
+    một device mới chưa bị chặn, nên chặn device chỉ có tính khuyến cáo -
+    nó giết phiên đang chạy trên device đó (block_device thu hồi token
+    family) chứ không ngăn được người đã có mật khẩu đăng nhập lại. Muốn
+    ngăn thật thì cần định danh device mà client không tự đặt được.
+
+    Mọi client không gửi user-agent sẽ gộp chung vào một device.
     """
     return hashlib.sha256((user_agent or "unknown").encode()).hexdigest()

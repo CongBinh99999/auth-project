@@ -171,6 +171,13 @@ repository directly.
 
 ## Known limitations
 
+- **Blocking a device is advisory, not a barrier.** The device identity is a
+  hash of the `User-Agent`, which the client chooses. Blocking revokes the token
+  families bound to that device, so a live session on it dies immediately — but
+  anyone holding the password can log in again under a different `User-Agent` and
+  will be recorded as a new, unblocked device. Stopping that needs a device
+  identifier the client cannot set.
+
 - **No migration tool.** `database/schema.sql` is the only definition, so schema
   changes have to be applied by hand everywhere.
 - **Per-IP limits need a deployment that exposes the real client IP.** See
