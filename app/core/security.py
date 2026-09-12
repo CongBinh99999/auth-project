@@ -75,8 +75,5 @@ def generate_verification_token() -> tuple[str, str]:
     hashed_token = hash_verification_token(plain_token)
     return plain_token, hashed_token
 
-def verify_verification_token(plain_token: str, hashed_token: str) -> bool:
-    return hash_verification_token(plain_token) == hashed_token    
-
 def hash_verification_token(token: str) -> str:
     return hashlib.sha256(token.encode()).hexdigest()

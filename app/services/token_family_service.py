@@ -167,47 +167,6 @@ class TokenFamilyService:
         return await self.token_family_repo.revoke_all_for_user(user_id)
         
 
-    async def get_family_by_id(self, family_id: UUID) -> TokenFamily | None:
-        """Lấy token family theo ID.
-        
-        Args:
-            family_id: UUID của family.
-            
-        Returns:
-            TokenFamily hoặc None nếu không tìm thấy.
-        """
-        return await self.token_family_repo.get_by_id(family_id)
-
-
-    async def get_family_by_jti(self, jti: str) -> TokenFamily | None:
-        """Lấy token family theo JTI của refresh token.
-        
-        Args:
-            jti: JWT ID của refresh token.
-            
-        Returns:
-            TokenFamily hoặc None nếu không tìm thấy.
-        """
-        return await self.token_family_repo.get_by_jti(jti)
-
-
-    async def update_current_jti(self, family_id: UUID, new_jti: str) -> TokenFamily:
-        """Update current JTI của token family.
-        
-        Args:
-            family_id: UUID của token family
-            new_jti: JTI mới
-            
-        Returns:
-            TokenFamily đã cập nhật
-        """
-        family = await self.token_family_repo.get_by_id(family_id)
-        if not family:
-            raise InvalidTokenException("Token family not found")
-        
-        return await self.token_family_repo.update_token(family, new_jti=new_jti)
-
-
     async def update_last_used(self, family: TokenFamily) -> TokenFamily:
         """Cập nhật last_used_at của token family.
         

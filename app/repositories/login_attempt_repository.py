@@ -42,54 +42,6 @@ class LoginAttemptRepository:
         return attempt
 
 
-    async def get_recent_by_email(self, email: str, minutes: int = 15) -> list[LoginAttempt]: 
-        """Lấy các login attempts gần đây theo email.
-        
-        Args:
-            email: Email cần tìm.
-            minutes: Số phút gần đây (default: 15).
-            
-        Returns:
-            Danh sách LoginAttempt trong khoảng thời gian.
-        """
-        cutoff = datetime.now(UTC) - timedelta(minutes=minutes)
-        result = await self.db.execute(
-            select(LoginAttempt)
-            .where(
-                and_(
-                    LoginAttempt.email == email,
-                    LoginAttempt.attempted_at >= cutoff
-                )
-            )
-        )
-
-        return list(result.scalars().all())
-
-
-    async def get_recent_by_ip(self, ip_address: str, minutes: int = 15) -> list[LoginAttempt]: 
-        """Lấy các login attempts gần đây theo IP.
-        
-        Args:
-            ip_address: IP address cần tìm.
-            minutes: Số phút gần đây (default: 15).
-            
-        Returns:
-            Danh sách LoginAttempt trong khoảng thời gian.
-        """
-        cutoff = datetime.now(UTC) - timedelta(minutes=minutes)
-        result = await self.db.execute(
-            select(LoginAttempt)
-            .where(
-                and_(
-                    LoginAttempt.ip_address == ip_address,
-                    LoginAttempt.attempted_at >= cutoff
-                )
-            )
-        )
-
-        return list(result.scalars().all())
-
-
     async def count_failed_by_email(self, email: str, minutes: int = 15) -> int:
         """Đếm login thất bại gần đây của riêng một email."""
         return await self._count_failed(LoginAttempt.email == email, minutes)
