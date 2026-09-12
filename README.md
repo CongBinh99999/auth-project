@@ -16,8 +16,12 @@ needs [uv](https://docs.astral.sh/uv/) and a running PostgreSQL 14+.
 
 ```bash
 cp .env.example .env      # optional, compose has working defaults
-docker compose up -d
+docker compose up -d --build
 ```
+
+`--build` is not optional after the first run. The image copies `app/` at build
+time, so `docker compose up -d` on its own happily restarts the previous image
+and serves whatever code it was built from — with no warning that it is stale.
 
 Three services come up: the API at http://localhost:8000 (Swagger UI at
 `/docs`), the dev console at http://localhost:5173, and PostgreSQL.
