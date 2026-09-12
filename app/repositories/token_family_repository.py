@@ -129,6 +129,21 @@ class TokenFamilyRepository:
         return result.rowcount
 
 
+    async def revoke_all_for_device(self, device_id: UUID) -> int:
+        """Thu hồi mọi token family gắn với một device.
+
+        Chặn device mà không gọi hàm này thì phiên đang chạy trên device đó
+        vẫn refresh được vô hạn - đúng tình huống điện thoại bị mất.
+        """
+        result = await self.db.execute(
+            update(TokenFamily)
+            .where(TokenFamily.device_id == device_id)
+            .values(is_revoked=True)
+        )
+
+        return result.rowcount
+
+
     async def is_valid_family(self, family: TokenFamily) -> bool:
         """Kiểm tra token family có hợp lệ không.
         

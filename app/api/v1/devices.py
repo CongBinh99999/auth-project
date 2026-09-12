@@ -88,6 +88,33 @@ async def untrust_device(
     return await device_service.untrust_device(device_id, user.id)
 
 
+@router.post(
+    "/{device_id}/block",
+    response_model=DeviceResponse,
+    summary="Chặn thiết bị"
+)
+async def block_device(
+    device_id: UUID,
+    user: ActiveUser,
+    device_service: DeviceServiceDep
+):
+    """Chặn thiết bị. Lần đăng nhập sau từ thiết bị này sẽ bị từ chối."""
+    return await device_service.block_device(device_id, user.id)
+
+
+@router.delete(
+    "/{device_id}/block",
+    response_model=DeviceResponse,
+    summary="Gỡ chặn thiết bị"
+)
+async def unblock_device(
+    device_id: UUID,
+    user: ActiveUser,
+    device_service: DeviceServiceDep
+):
+    return await device_service.unblock_device(device_id, user.id)
+
+
 @router.delete(
     "/{device_id}", 
     status_code=status.HTTP_204_NO_CONTENT,

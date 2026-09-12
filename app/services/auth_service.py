@@ -11,6 +11,7 @@ from uuid import UUID, uuid4
 from fastapi import BackgroundTasks, Depends
 
 from app.core.exceptions import (
+    DeviceBlockedException,
     EmailExistsException,
     InvalidCredentialsException,
     RoleNotFoundException,
@@ -19,7 +20,7 @@ from app.core.exceptions import (
     UserInactiveException,
     UserNotVerifiedException,
 )
-from app.core.security import hash_password, verify_password
+from app.core.security import device_fingerprint, hash_password, verify_password
 from app.models.token_blacklist import TokenType
 from app.models.user import User
 from app.repositories.role_repository import RoleRepoDep, RoleRepository
@@ -280,18 +281,30 @@ class AuthService:
             await self.user_repo.db.commit()
             raise
 
+        # Kiểm tra device TRƯỚC khi ghi nhận thành công. Ghi thành công rồi mới
+        # chặn thì clear_attempts_on_success đã xoá sạch bộ đếm, và device bị
+        # chặn trở thành kênh dò mật khẩu không giới hạn.
+        device = None
+        if self.device_service:
+            try:
+                device = await self.device_service.register_device(
+                    user_id=user.id,
+                    fingerprint=device_fingerprint(user_agent),
+                    ip_address=ip_address,
+                    user_agent=user_agent
+                )
+            except DeviceBlockedException:
+                # get_db rollback khi request raise, nên phải commit tại đây.
+                await self.login_attempt_service.record_attempt(
+                    email, ip_address, False, user.id, user_agent, "device_blocked"
+                )
+                await self.user_repo.db.commit()
+                raise
+
         await self.login_attempt_service.record_attempt(
             email, ip_address, True, user.id, user_agent
         )
         await self.login_attempt_service.clear_attempts_on_success(email, ip_address)
-
-        device = None
-        if self.device_service:
-            device = await self.device_service.register_device(
-                user_id=user.id,
-                ip_address=ip_address,
-                user_agent=user_agent
-            )
 
         refresh_jti = str(uuid4())
         

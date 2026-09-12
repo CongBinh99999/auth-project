@@ -10,8 +10,12 @@ from uuid import UUID
 
 from fastapi import Depends
 
-from app.core.exceptions import DeviceNotFoundException
+from app.core.exceptions import DeviceBlockedException, DeviceNotFoundException
 from app.models.user_device import UserDevice
+from app.repositories.token_family_repository import (
+    TokenFamilyRepoDep,
+    TokenFamilyRepository,
+)
 from app.repositories.user_device_repository import (
     UserDeviceRepoDep,
     UserDeviceRepository,
@@ -33,8 +37,13 @@ class DeviceService:
         device_repo: Repository để thao tác với UserDevice entity.
     """
 
-    def __init__(self, device_repo: UserDeviceRepository):
+    def __init__(
+        self,
+        device_repo: UserDeviceRepository,
+        family_repo: TokenFamilyRepository | None = None,
+    ):
         self.device_repo = device_repo
+        self.family_repo = family_repo
 
 
     async def register_device(
@@ -71,6 +80,9 @@ class DeviceService:
         if fingerprint: 
             device = await self.device_repo.get_by_fingerprint(user_id, fingerprint)
         
+        if device and device.status == DeviceStatus.BLOCKED:
+            raise DeviceBlockedException()
+
         if not device: 
             return await self.device_repo.create(
                 user_id=user_id,
@@ -182,8 +194,28 @@ class DeviceService:
         """
         device = await self.get_device_by_id(device_id, user_id)
 
+        # Chỉ đổi cờ là chưa đủ: phiên đang chạy trên device đó vẫn refresh được.
+        if self.family_repo:
+            await self.family_repo.revoke_all_for_device(device.id)
+
         return await self.device_repo.set_status(device=device, status=DeviceStatus.BLOCKED)
     
+
+    async def unblock_device(self, device_id: UUID, user_id: UUID) -> UserDevice:
+        """Gỡ chặn device, đưa về trạng thái active.
+
+        Không có hàm này thì block là một chiều: device bị chặn sẽ không bao giờ
+        đăng nhập lại được.
+        """
+        device = await self.get_device_by_id(device_id, user_id)
+
+        # Không kiểm tra thì endpoint này thành "đặt trạng thái active" chung,
+        # kéo cả device đang INACTIVE lên ACTIVE mà API không hề hứa điều đó.
+        if device.status != DeviceStatus.BLOCKED:
+            return device
+
+        return await self.device_repo.set_status(device=device, status=DeviceStatus.ACTIVE)
+
 
     async def remove_device(self, device_id: UUID, user_id: UUID) -> None:
         """Xóa device khỏi danh sách.
@@ -239,10 +271,11 @@ class DeviceService:
         )
     
 def get_device_service(
-    device_repo: UserDeviceRepoDep
+    device_repo: UserDeviceRepoDep,
+    family_repo: TokenFamilyRepoDep,
 ) -> DeviceService:
     """Dependency injection factory cho DeviceService."""
-    return DeviceService(device_repo)
+    return DeviceService(device_repo, family_repo)
 
 
 DeviceServiceDep = Annotated[DeviceService, Depends(get_device_service)]
