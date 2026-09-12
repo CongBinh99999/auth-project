@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.pages import router as pages_router
 from app.api.router import api_router
 from app.config import get_settings
 from app.config.database import AsyncSessionLocal
@@ -72,6 +73,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(api_router)
+app.include_router(pages_router)
 
 @app.get("/health")
 async def health_check(): 
