@@ -2,7 +2,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Annotated
 
 from fastapi import Depends
-from sqlalchemy import and_, delete, func, or_, select
+from sqlalchemy import and_, delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config.database import get_db
@@ -88,36 +88,6 @@ class LoginAttemptRepository:
         )
 
         return list(result.scalars().all())
-
-
-    async def count_failed_attempts(self, email: str, ip_address: str, minutes: int = 15) -> int: 
-        """Đếm số lần login thất bại theo email hoặc IP.
-        
-        Args:
-            email: Email cần kiểm tra.
-            ip_address: IP address cần kiểm tra.
-            minutes: Số phút gần đây (default: 15).
-            
-        Returns:
-            Số lần login thất bại.
-        """
-        cutoff = datetime.now(UTC) - timedelta(minutes=minutes)
-        result = await self.db.execute(
-            select(func.count())
-            .select_from(LoginAttempt)
-            .where(
-                and_(
-                    or_(
-                        LoginAttempt.email == email,
-                        LoginAttempt.ip_address == ip_address
-                    ),
-                    LoginAttempt.attempted_at >= cutoff,
-                    LoginAttempt.is_successful == False
-                )
-            )
-        )
-
-        return result.scalar() or 0
 
 
     async def count_failed_by_email(self, email: str, minutes: int = 15) -> int:

@@ -176,17 +176,6 @@ class PasswordResetService:
         return True
 
 
-    async def cleanup_expired_tokens(self) -> int:
-        """Xóa các reset tokens đã hết hạn.
-        
-        Nên chạy định kỳ để dọn dẹp database.
-        
-        Returns:
-            Số lượng tokens đã xóa.
-        """
-        return await self.reset_repo.cleanup_expired()
-
-
 def get_password_reset_service(
     user_repo: UserRepoDep,
     reset_repo: PasswordResetRepoDep, 

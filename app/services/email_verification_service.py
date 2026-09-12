@@ -135,19 +135,6 @@ class EmailVerificationService:
         return await self.create_verification_token(user_id, user.email)
     
 
-    async def has_pending_verification(self, user_id: UUID) -> bool:
-        """Kiểm tra user có verification pending không.
-        
-        Args:
-            user_id: UUID của user.
-            
-        Returns:
-            True nếu có verification token chưa sử dụng.
-        """
-        token = await self.verification_repo.get_pending_by_user(user_id)
-        return token is not None
-        
-
 def get_email_verification_service(
     user_repo: UserRepoDep, 
     verification_repo: EmailVerificationRepoDep
