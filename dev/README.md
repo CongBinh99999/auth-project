@@ -6,6 +6,10 @@ không build thư mục này.
 
 ## Chạy
 
+`docker compose up -d --build` ở thư mục gốc đã phục vụ sẵn console tại
+http://localhost:5173 (bản build tĩnh, không hot reload). Phần dưới là cách
+chạy với hot reload để sửa chính console.
+
 Hai tiến trình, hai terminal:
 
 ```bash
