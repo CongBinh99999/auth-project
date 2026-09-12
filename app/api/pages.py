@@ -62,51 +62,60 @@ _PAGE = """<!doctype html>
 </form>
 
 <script>
-// Đọc thẳng từ URL. Server không chèn gì vào trang, nên không có
-// đường nào để token mang HTML thoát ra ngoài chuỗi JS.
+// Đọc thẳng từ URL. Server không chèn gì vào trang, nên token mang HTML
+// cũng không thoát ra ngoài được.
 const token = new URLSearchParams(location.search).get("token") || "";
 const msg = document.getElementById("msg");
+const button = document.querySelector("button");
 
-if (!token) {{
-  msg.className = "bad";
-  msg.textContent = "Link thiếu token. Hãy mở đúng link trong email.";
-  document.querySelector("button").disabled = true;
+function say(kind, text) {
+  msg.className = kind;
+  msg.textContent = text;
 }
 
-document.getElementById("f").addEventListener("submit", async (e) => {{
+if (!token) {
+  say("bad", "Link thiếu token. Hãy mở đúng link trong email.");
+  button.disabled = true;
+}
+
+document.getElementById("f").addEventListener("submit", async (e) => {
   e.preventDefault();
+
   const p1 = document.getElementById("p1").value;
   const p2 = document.getElementById("p2").value;
 
-  if (p1 !== p2) {{
-    msg.className = "bad";
-    msg.textContent = "Hai mật khẩu không khớp.";
+  if (p1 !== p2) {
+    say("bad", "Hai mật khẩu không khớp.");
     return;
   }
 
-  const button = document.querySelector("button");
   button.disabled = true;
-  msg.className = "";
-  msg.textContent = "Đang gửi...";
+  say("", "Đang gửi...");
 
-  const res = await fetch("/api/v1/auth/reset-password", {{
-    method: "POST",
-    headers: {{ "Content-Type": "application/json" }},
-    body: JSON.stringify({{ token, new_password: p1, confirm_password: p2 }}),
-  }});
-
-  if (res.ok) {{
-    msg.className = "ok";
-    msg.textContent = "Xong. Mọi phiên đăng nhập cũ đã bị thu hồi, hãy đăng nhập lại.";
-  }} else {{
-    const body = await res.json().catch(() => null);
-    msg.className = "bad";
-    msg.textContent = body?.detail
-      ? (typeof body.detail === "string" ? body.detail : "Mật khẩu không hợp lệ.")
-      : `Thất bại (${{res.status}}).`;
+  let res;
+  try {
+    res = await fetch("/api/v1/auth/reset-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: token, new_password: p1, confirm_password: p2 }),
+    });
+  } catch (err) {
+    // Không bắt ở đây thì nút kẹt ở "Đang gửi..." vĩnh viễn.
+    say("bad", "Không gọi được máy chủ. Kiểm tra kết nối rồi thử lại.");
     button.disabled = false;
+    return;
   }
-}});
+
+  if (res.ok) {
+    say("ok", "Xong. Mọi phiên đăng nhập cũ đã bị thu hồi, hãy đăng nhập lại.");
+    return;
+  }
+
+  const body = await res.json().catch(() => null);
+  const detail = body && typeof body.detail === "string" ? body.detail : null;
+  say("bad", detail || "Mật khẩu không hợp lệ hoặc link đã hết hạn.");
+  button.disabled = false;
+});
 </script>
 </body>
 </html>
