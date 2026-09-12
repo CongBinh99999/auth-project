@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AuthProject — Dev Console</title>
+    <script>
+      // shadcn bật dark bằng class .dark, không theo media query.
+      // Theo hệ điều hành, không lưu lựa chọn - đây là công cụ dev.
+      const dark = matchMedia("(prefers-color-scheme: dark)");
+      const apply = () => document.documentElement.classList.toggle("dark", dark.matches);
+      apply();
+      dark.addEventListener("change", apply);
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
