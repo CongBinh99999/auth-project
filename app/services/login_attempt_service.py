@@ -65,37 +65,6 @@ class LoginAttemptService:
         )
 
 
-    async def get_failed_attempts_count(self, email: str, ip_address: str) -> int:
-        """Đếm số lần login thất bại gần đây.
-        
-        Args:
-            email: Email cần kiểm tra.
-            ip_address: IP address cần kiểm tra.
-            
-        Returns:
-            Số lần thất bại trong BLOCK_DURATION_MINUTES phút gần đây.
-        """
-        return await self.login_attempt_repo.count_failed_attempts(
-            email, 
-            ip_address, 
-            minutes=self.BLOCK_DURATION_MINUTES
-        )
-
-
-    async def get_remaining_attempts(self, email: str, ip_address: str) -> int:
-        """Tính số lần thử còn lại trước khi bị block.
-        
-        Args:
-            email: Email cần kiểm tra.
-            ip_address: IP address cần kiểm tra.
-            
-        Returns:
-            Số lần thử còn lại (≥ 0).
-        """
-        failing = await self.get_failed_attempts_count(email, ip_address)
-        return max(0, self.MAX_ATTEMPTS - failing)
-
-
     async def cleanup_old_attempts(self, days: int = 30) -> int:
         """Xóa các login attempts cũ để maintain database.
         
