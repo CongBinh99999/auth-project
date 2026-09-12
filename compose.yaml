@@ -33,6 +33,11 @@ services:
       JWT_SECRET: ${JWT_SECRET:-SECRET_KEY}
       SMTP_USERNAME: ${SMTP_USERNAME:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      # uvicorn chỉ tin X-Forwarded-For khi peer nằm trong danh sách này.
+      # Mặc định 127.0.0.1, nghĩa là header từ gateway của Docker bị bỏ qua và
+      # mọi client gộp thành một IP. Đặt đúng địa chỉ proxy khi có proxy thật;
+      # đừng bao giờ đặt "*".
+      FORWARDED_ALLOW_IPS: ${FORWARDED_ALLOW_IPS:-127.0.0.1}
       # Dev console chạy ngoài container, cần được CORS cho qua.
       CORS_ORIGINS: '["http://localhost:5173","http://localhost:3000"]'
     ports:

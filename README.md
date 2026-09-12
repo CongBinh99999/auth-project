@@ -60,6 +60,34 @@ dropped without a warning and the default silently applies.
 
 Generate a real secret with `openssl rand -hex 32`.
 
+## Client IP and proxies
+
+Login and registration are rate-limited per IP, so the address the app records
+matters. uvicorn parses `X-Forwarded-For` and rewrites `request.client.host`, but
+only when the connection's peer is listed in `FORWARDED_ALLOW_IPS` — which
+defaults to `127.0.0.1`. Measured behaviour:
+
+| Setup | `X-Forwarded-For` sent | IP recorded |
+|---|---|---|
+| uvicorn on localhost, request from 127.0.0.1 | `203.0.113.77` | `203.0.113.77` — trusted |
+| `docker compose`, request through the gateway | `1.2.3.4` | `192.168.65.1` — header ignored |
+| `docker compose`, no header | — | `192.168.65.1` |
+
+The default is safe: a client cannot forge its own address unless it is already
+on the loopback interface. The cost is the third row — behind Docker's NAT, and
+behind any reverse proxy that is not on `127.0.0.1`, every client collapses into
+one address and the per-IP thresholds stop separating users.
+
+Behind a real proxy, set `FORWARDED_ALLOW_IPS` to that proxy's address so the
+forwarded header is trusted from it and only it:
+
+```yaml
+environment:
+  FORWARDED_ALLOW_IPS: "10.0.0.5"   # the proxy, never "*"
+```
+
+`"*"` trusts the header from anyone and makes the limits trivially bypassable.
+
 ## API
 
 29 routes under `/api/v1`, plus `/health`. Full schema at `/docs`.
@@ -136,9 +164,10 @@ repository directly.
 
 - **No migration tool.** `database/schema.sql` is the only definition, so schema
   changes have to be applied by hand everywhere.
-- **`X-Forwarded-For` is not handled.** `request.client.host` is taken as the
-  client IP, so behind a reverse proxy every request shares one address and the
-  per-IP limits on login and registration stop discriminating.
+- **Per-IP limits need a deployment that exposes the real client IP.** See
+  "Client IP and proxies" below. Under `docker compose` every request arrives from
+  the Docker gateway, so the per-IP limits on login and registration apply to all
+  users combined rather than per user.
 - **Tests share the configured database** and leave data behind; they are not safe
   to run in parallel.
 - **No `/reset-password` page.** The password reset email links to a frontend
