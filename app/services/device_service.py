@@ -10,7 +10,7 @@ from uuid import UUID
 
 from fastapi import Depends
 
-from app.core.exceptions import DeviceNotFoundException
+from app.core.exceptions import DeviceBlockedException, DeviceNotFoundException
 from app.models.user_device import UserDevice
 from app.repositories.user_device_repository import (
     UserDeviceRepoDep,
@@ -71,6 +71,9 @@ class DeviceService:
         if fingerprint: 
             device = await self.device_repo.get_by_fingerprint(user_id, fingerprint)
         
+        if device and device.status == DeviceStatus.BLOCKED:
+            raise DeviceBlockedException()
+
         if not device: 
             return await self.device_repo.create(
                 user_id=user_id,
@@ -184,6 +187,17 @@ class DeviceService:
 
         return await self.device_repo.set_status(device=device, status=DeviceStatus.BLOCKED)
     
+
+    async def unblock_device(self, device_id: UUID, user_id: UUID) -> UserDevice:
+        """Gỡ chặn device, đưa về trạng thái active.
+
+        Không có hàm này thì block là một chiều: device bị chặn sẽ không bao giờ
+        đăng nhập lại được.
+        """
+        device = await self.get_device_by_id(device_id, user_id)
+
+        return await self.device_repo.set_status(device=device, status=DeviceStatus.ACTIVE)
+
 
     async def remove_device(self, device_id: UUID, user_id: UUID) -> None:
         """Xóa device khỏi danh sách.

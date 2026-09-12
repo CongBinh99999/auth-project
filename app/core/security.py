@@ -77,3 +77,13 @@ def generate_verification_token() -> tuple[str, str]:
 
 def hash_verification_token(token: str) -> str:
     return hashlib.sha256(token.encode()).hexdigest()
+
+
+def device_fingerprint(user_agent: str | None) -> str:
+    """Định danh device ổn định giữa các lần đăng nhập.
+
+    Lấy từ user-agent chứ không lấy IP: IP đổi liên tục trên mạng di động,
+    dùng nó thì mỗi lần đăng nhập lại thành một device mới và việc chặn
+    device mất hết ý nghĩa.
+    """
+    return hashlib.sha256((user_agent or "unknown").encode()).hexdigest()

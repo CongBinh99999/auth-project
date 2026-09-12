@@ -19,7 +19,7 @@ from app.core.exceptions import (
     UserInactiveException,
     UserNotVerifiedException,
 )
-from app.core.security import hash_password, verify_password
+from app.core.security import device_fingerprint, hash_password, verify_password
 from app.models.token_blacklist import TokenType
 from app.models.user import User
 from app.repositories.role_repository import RoleRepoDep, RoleRepository
@@ -289,6 +289,7 @@ class AuthService:
         if self.device_service:
             device = await self.device_service.register_device(
                 user_id=user.id,
+                fingerprint=device_fingerprint(user_agent),
                 ip_address=ip_address,
                 user_agent=user_agent
             )
