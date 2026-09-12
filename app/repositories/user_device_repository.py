@@ -74,9 +74,14 @@ class UserDeviceRepository:
                     UserDevice.fingerprint == fingerprint
                 )
             )
+            .order_by(UserDevice.created_at)
         )
 
-        return result.scalar_one_or_none()
+        # first() chứ không phải scalar_one_or_none(): không có ràng buộc unique
+        # trên (user_id, fingerprint), nên hai login đồng thời có thể cùng tạo
+        # một dòng. scalar_one_or_none() sẽ ném MultipleResultsFound và khoá
+        # user ra khỏi hệ thống bằng lỗi 500 ở mọi lần đăng nhập sau đó.
+        return result.scalars().first()
 
         
     async def create(self, **device_data) -> UserDevice: 

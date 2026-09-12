@@ -85,3 +85,20 @@ async def test_block_then_unblock_restores_access():
 
     await service.unblock_device(device.id, user_id)
     assert device.status == DeviceStatus.ACTIVE
+
+
+async def test_duplicate_fingerprints_do_not_break_login():
+    """Không có ràng buộc unique trên (user_id, fingerprint).
+
+    Hai login đồng thời có thể cùng tạo một dòng. Trước đây lookup dùng
+    scalar_one_or_none() nên từ đó trở đi mọi lần đăng nhập đều trả 500.
+    """
+    blocked = _Device(DeviceStatus.BLOCKED)
+
+    class _DuplicateRepo(_DeviceRepo):
+        async def get_by_fingerprint(self, user_id, fingerprint):
+            # repo thật dùng .first() nên luôn trả đúng một dòng, không ném lỗi
+            return blocked
+
+    with pytest.raises(DeviceBlockedException):
+        await DeviceService(_DuplicateRepo()).register_device(user_id=uuid4(), fingerprint="fp")
