@@ -19,9 +19,12 @@ cp .env.example .env      # optional, compose has working defaults
 docker compose up -d
 ```
 
-The API is at http://localhost:8000, Swagger UI at http://localhost:8000/docs.
+Three services come up: the API at http://localhost:8000 (Swagger UI at
+`/docs`), the dev console at http://localhost:5173, and PostgreSQL.
+
 PostgreSQL is published on **5433** rather than 5432, so it does not collide with a
-Postgres already installed on the host.
+Postgres already installed on the host. The console must be on 5173 — that is one
+of the two origins `CORS_ORIGINS` allows.
 
 `database/schema.sql` runs automatically the first time the database volume is
 created. It is **not** re-run afterwards — changing the schema means
@@ -100,6 +103,10 @@ pull request.
 A React app under [`dev/`](dev/) for running the flows by hand and executing six
 security scenarios (refresh token used as an access token, single-use
 verification token, brute-force blocking, and so on) with one click each.
+
+`docker compose up` already serves it on http://localhost:5173 as static files
+behind nginx — no Node needed. To edit the console itself, run it with hot reload
+instead:
 
 ```bash
 cd dev && npm install && npm run dev

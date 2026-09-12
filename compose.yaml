@@ -43,5 +43,15 @@ services:
       timeout: 5s
       retries: 5
 
+  console:
+    build: ./dev
+    depends_on:
+      - api
+    # Trình duyệt gọi API ở localhost:8000, không phải qua mạng nội bộ của
+    # compose, nên console không cần biết hostname của service api.
+    # Cổng host phải là 5173: CORS_ORIGINS của API chỉ cho 3000 và 5173.
+    ports:
+      - "5173:80"
+
 volumes:
   pgdata:
